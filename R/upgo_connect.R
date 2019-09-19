@@ -8,3 +8,4 @@ upgo_connect <- function(property = TRUE, daily = TRUE, reviews = FALSE) {
   if (daily) daily_all <<- dplyr::tbl(con, "daily")
   if (reviews) reviews_all <<- dplyr::tbl(con, "reviews")
 }
+
