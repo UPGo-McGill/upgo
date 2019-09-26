@@ -4,7 +4,8 @@
 \alias{upgo_connect}
 \title{Function to connect to UPGo server}
 \usage{
-upgo_connect(property = TRUE, daily = TRUE, reviews = FALSE)
+upgo_connect(property = TRUE, daily = TRUE, ML = TRUE,
+  reviews = FALSE)
 }
 \arguments{
 \item{property}{A logical scalar. Should the property table (named
@@ -12,6 +13,9 @@ upgo_connect(property = TRUE, daily = TRUE, reviews = FALSE)
 
 \item{daily}{A logical scalar. Should the daily table (named `daily_all`) be
 added to the global environment?}
+
+\item{ML}{A logical scalar. Should the ML table (named `ML_all`) be added
+to the global environment?}
 
 \item{reviews}{A logical scalar. Should the reviews table (named
 `reviews_all`) be added to the global environment?}
