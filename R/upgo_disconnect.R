@@ -13,6 +13,12 @@
 #' @export
 
 upgo_disconnect <- function() {
-  rm(con, property_all, daily_all, ML_all, reviews_all, envir = .GlobalEnv)
+
+  if (exists("property_all")) rm(property_all, envir = .GlobalEnv)
+  if (exists("daily_all")) rm(daily_all, envir = .GlobalEnv)
+  if (exists("ML_all")) rm(ML_all, envir = .GlobalEnv)
+  if (exists("reviews_all")) rm(reviews_all, envir = .GlobalEnv)
+  if (exists("con")) rm(con, envir = .GlobalEnv)
+
 }
 
