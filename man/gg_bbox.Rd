@@ -4,7 +4,7 @@
 \alias{gg_bbox}
 \title{Function to specify a bounding box for geom_sf}
 \usage{
-gg_bbox(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1)
+gg_bbox(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1, ...)
 }
 \arguments{
 \item{geom}{TKTK}
@@ -16,6 +16,8 @@ gg_bbox(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1)
 \item{y1}{TKTK}
 
 \item{y2}{TKTK}
+
+\item{...}{TKTK}
 }
 \value{
 TKTK.
