@@ -13,15 +13,15 @@
 #' `property_all`) be added to the global environment?
 #' @param daily A logical scalar. Should the daily table (named `daily_all`) be
 #' added to the global environment?
-#' @param ML A logical scalar. Should the ML table (named `ML_all`) be added
-#' to the global environment?
+#' @param multi A logical scalar. Should the multilisting table (named
+#' `multi_all`) be added to the global environment?
 #' @param reviews A logical scalar. Should the reviews table (named
 #' `reviews_all`) be added to the global environment?
 #' @return The function returns no output, but makes assignments to the global
 #' environment.
 #' @export
 
-upgo_connect <- function(property = TRUE, daily = TRUE, ML = TRUE,
+upgo_connect <- function(property = TRUE, daily = TRUE, multi = TRUE,
                          reviews = FALSE) {
 
   con <<- RPostgres::dbConnect(
@@ -31,7 +31,7 @@ upgo_connect <- function(property = TRUE, daily = TRUE, ML = TRUE,
 
   if (property) property_all <<- dplyr::tbl(con, "property")
   if (daily) daily_all <<- dplyr::tbl(con, "daily")
-  if (ML) ML_all <<- dplyr::tbl(con, "ML")
+  if (multi) multi_all <<- dplyr::tbl(con, "multi")
   if (reviews) reviews_all <<- dplyr::tbl(con, "reviews")
 }
 
