@@ -181,11 +181,29 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
 
         # Logic for cases with a single plain-text string
       } else {
-        elements_extracted <-
-          elements %>%
-          str_extract('(?<=located in ).*(?=.<)') %>%
-          str_split(", ") %>%
-          unlist()
+
+        # Deal with Bonaire, Sint Eustatius and Saba
+        if (str_detect(elements, "Bonaire")) {
+          elements_extracted <-
+            elements %>%
+            str_extract('(?<=located in ).*(?=.<)') %>%
+            str_split(", ") %>%
+            unlist()
+
+          elements_extracted[length(elements_extracted) - 1] <-
+            paste(elements_extracted[length(elements_extracted) - 1],
+                  elements_extracted[length(elements_extracted)], sep = ", ")
+
+          elements_extracted <- elements_extracted[-length(elements_extracted)]
+
+          # Deal with other cases of a single plain-text string
+        } else {
+          elements_extracted <-
+            elements %>%
+            str_extract('(?<=located in ).*(?=.<)') %>%
+            str_split(", ") %>%
+            unlist()
+        }
       }
     }
 
