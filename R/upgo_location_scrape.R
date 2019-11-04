@@ -23,7 +23,7 @@
 
 upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
 
-  ## Initialize table if geography is NULL
+  ### Initialize table if geography is NULL
 
   if (missing(geography)) {
     geography <- tibble(property_ID = character(0),
@@ -38,9 +38,12 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
 
   PIDs <- property$property_ID
 
-  ## For loop to retrieve geographies
+
+  ### For loop to retrieve geographies
 
   for (i in seq_along(PIDs)) {
+
+    ## Determine whether to skip the row
 
     # Skip row if it has already been scraped
     if (!is.na(geography[i, 5])) {
@@ -60,6 +63,9 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
       next
     }
 
+
+    ## Initialize connection
+
     # Extract URL and navigate to page, then wait
     PID <- str_extract(PIDs[i], "(?<=ab-).*")
     remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID))
@@ -71,6 +77,9 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
       message("Listing ", i, " no longer exists.")
       next
     }
+
+
+    ## Get elements
 
     # Check to see if the listing is Airbnb plus
     if (str_detect(remDr$getCurrentUrl(), "plus")) {
@@ -119,73 +128,69 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
         str_split(", ") %>%
         unlist()
 
-      geography[i, 2] <- elements_extracted[1]
-      geography[i, 3] <- elements_extracted[2]
-      geography[i, 4] <- elements_extracted[3]
-      geography[i, 5] <- elements
+    # Conditional for all non-plus locations
+    } else {
 
-    message("Listing ", i, " successfully scraped.")
-
-    .temp_scraping_table <<- geography
-    next
-    }
-
-    # Filter elements to ones containing key phrase
-    elements <-
+      # Filter elements to ones containing key phrase
+      elements <-
         elements[str_detect(elements, "’s place is located in")]
 
-    # Aggressive exception catching to avoid the function terminating
-    if (length(elements) == 0) {
-      message("Connection problem; scraping aborted.")
-      remDr$close()
-      rD$server$stop()
-      return(geography)
+      # Aggressive exception catching to avoid the function terminating
+      if (length(elements) == 0) {
+        message("Connection problem; scraping aborted.")
+        remDr$close()
+        rD$server$stop()
+        return(geography)
+      }
+
+      # Try to filter out spurious uses of the "place is located in" phrase
+      if(length(elements) > 1 & sum(str_detect(elements, "span")) > 0) {
+        elements <-
+          elements[str_detect(elements, "_abw475")]
+      }
+
+      # Logic for cases with standard place name separation
+      if(str_detect(elements, "span")) {
+        elements_extracted <-
+          elements %>%
+          str_extract_all(('(?<="><span>).*?(?=</span>)')) %>%
+          unlist() %>%
+          map_chr(str_replace, ",$", "")
+
+        # Logic for cases with missing places in commas
+      } else if (str_detect(elements, "\n, \n\n\n,")) {
+        elements_extracted <-
+          elements %>%
+          str_extract('(?<=, ).*(?=.<)')
+
+        # Logic for cases with one missing place in commas and exit early
+      } else if (str_detect(elements, " \n\n,")) {
+        elements_extracted <-
+          elements %>%
+          str_extract('(?<=, ).*(?=.<)') %>%
+          str_split(", ") %>%
+          unlist()
+
+        geography[i, 3] <- elements_extracted[1]
+        geography[i, 4] <- elements_extracted[2]
+        geography[i, 5] <- elements
+
+        message("Listing ", i, " successfully scraped.")
+        .temp_scraping_table <<- geography
+        next
+
+        # Logic for cases with a single plain-text string
+      } else {
+        elements_extracted <-
+          elements %>%
+          str_extract('(?<=located in ).*(?=.<)') %>%
+          str_split(", ") %>%
+          unlist()
+      }
     }
 
-    # Try to filter out spurious uses of the "place is located in" phrase
-    if(length(elements) > 1 & sum(str_detect(elements, "span")) > 0) {
-      elements <-
-        elements[str_detect(elements, "_abw475")]
-    }
 
-    # Logic for cases with standard place name separation
-    if(str_detect(elements, "span")) {
-      elements_extracted <-
-        elements %>%
-        str_extract_all(('(?<="><span>).*?(?=</span>)')) %>%
-        unlist() %>%
-        map_chr(str_replace, ",$", "")
-
-    # Logic for cases with missing places in commas
-    } else if (str_detect(elements, "\n, \n\n\n,")) {
-      elements_extracted <-
-        elements %>%
-        str_extract('(?<=, ).*(?=.<)')
-
-    # Logic for cases with one missing place in commas and exit early
-    } else if (str_detect(elements, " \n\n,")) {
-      elements_extracted <-
-        elements %>%
-        str_extract('(?<=, ).*(?=.<)') %>%
-        str_split(", ") %>%
-        unlist()
-
-      geography[i, 3] <- elements_extracted[1]
-      geography[i, 4] <- elements_extracted[2]
-      geography[i, 5] <- elements
-
-      message("Listing ", i, " successfully scraped.")
-      .temp_scraping_table <<- geography
-      next
-
-    # Logic for cases with a single plain-text string
-    } else {
-      elements_extracted <-
-        elements %>%
-        str_extract('(?<=located in ).*(?=.<)') %>%
-        str_split(", ") %>%
-        unlist()
-    }
+    ## Allocate output to geography table
 
     # With a single element, put it in the country field
     if (length(elements_extracted) == 1) {
@@ -217,7 +222,7 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
 
   }
 
-  ## Close connection and return output
+  ### Close connection and return output
 
   remDr$close()
   rD$server$stop()
