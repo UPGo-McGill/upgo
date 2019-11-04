@@ -13,6 +13,7 @@
 #' @param geography An existing output table which the function should add to.
 #' By default the function creates a new table instead.
 #' @import RSelenium
+#' @importFrom dplyr last
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
 #' @importFrom stringr str_split
@@ -181,33 +182,38 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
     } else {
       elements_extracted <-
         elements %>%
-        str_extract('(?<=located in ).*(?=.<)')
+        str_extract('(?<=located in ).*(?=.<)') %>%
+        str_split(", ") %>%
+        unlist()
     }
 
+    # With a single element, put it in the country field
     if (length(elements_extracted) == 1) {
-      if (str_detect(elements_extracted, ",") &
-          !str_detect(elements_extracted, "Bonaire")) {
-        geography[i, 3] <- str_extract(elements_extracted, ".+(?=,)")
-        geography[i, 4] <- str_extract(elements_extracted, "(?<=, ).+")
-      } else {
-        geography[i, 4] <- elements_extracted
-        }
+      geography[i, 4] <- elements_extracted
 
+    # With two elements, put them in region and country
     } else if (length(elements_extracted) == 2) {
       geography[i, 2] <- elements_extracted[1]
       geography[i, 4] <- elements_extracted[2]
 
-    } else {
+    # With three elements, put them in city, region and country
+    } else if (length(elements_extracted) == 3) {
       geography[i, 2] <- elements_extracted[1]
       geography[i, 3] <- elements_extracted[2]
       geography[i, 4] <- elements_extracted[3]
-    }
+
+    # With more than three elements, only take country
+    } else if (length(elements_extracted) > 3) {
+      geography[i, 4] <- last(elements_extracted)
+
+    # Throw exception if none of the length conditions is satisfied
+    } else stop()
 
     geography[i, 5] <- elements
 
-    message("Listing ", i, " successfully scraped.")
-
     .temp_scraping_table <<- geography
+
+    message("Listing ", i, " successfully scraped.")
 
   }
 
