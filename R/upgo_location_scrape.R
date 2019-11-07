@@ -126,7 +126,7 @@ upgo_location_scrape <- function(property, port = NULL, delay = 10,
     if (length(elements) == 0) {
       message("Connection problem; scraping aborted.")
       remDr$close()
-      rD$server$stop()
+      if (missing(port)) rD$server$stop()
       return(geography)
     }
 
@@ -150,7 +150,7 @@ upgo_location_scrape <- function(property, port = NULL, delay = 10,
       if (length(elements) == 0) {
         message("Connection problem; scraping aborted.")
         remDr$close()
-        rD$server$stop()
+        if (missing(port)) rD$server$stop()
         return(geography)
       }
 
