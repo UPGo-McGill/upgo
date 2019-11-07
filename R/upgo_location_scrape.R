@@ -254,7 +254,7 @@ upgo_location_scrape <- function(property, port = NULL, delay = 10,
   ### Close connection and return output
 
   remDr$close()
-  rD$server$stop()
+  if (missing(port)) rD$server$stop()
 
   rm(.temp_scraping_table, envir = .GlobalEnv)
   return(geography)
