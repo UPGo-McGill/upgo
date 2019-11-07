@@ -7,6 +7,8 @@
 #'
 #' @param property An input table with a field named \code{property_ID} which
 #' will be used to generate URLs for scraping.
+#' @param port The port to use to connect to Docker container. If NULL (the
+#' default), an interactive Chrome window will be opened instead.
 #' @param delay A numeric scalar. The number of seconds the function should
 #' delay in between listings to prevent connection errors or Airbnb shutting
 #' down access.
@@ -21,7 +23,8 @@
 #' @export
 
 
-upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
+upgo_location_scrape <- function(property, port = NULL, delay = 10,
+                                 geography = NULL) {
 
   ### Initialize table if geography is NULL
 
@@ -33,8 +36,16 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
                         raw = character(0))
   }
 
-  rD <- rsDriver(browser = "chrome", chromever = "77.0.3865.40")
-  remDr <- rD$client
+
+  ### Start browser
+  if (missing(port)) {
+    rD <- rsDriver(browser = "chrome", chromever = "77.0.3865.40")
+    remDr <- rD$client
+
+  } else {
+    remDr <- remoteDriver(browserName = "chrome", port = as.integer(port))
+    remDr$open()
+  }
 
   PIDs <- property$property_ID
 
@@ -214,7 +225,7 @@ upgo_location_scrape <- function(property, delay = 10, geography = NULL) {
     if (length(elements_extracted) == 1) {
       geography[i, 4] <- elements_extracted
 
-    # With two elements, put them in region and country
+    # With two elements, put them in city and country
     } else if (length(elements_extracted) == 2) {
       geography[i, 2] <- elements_extracted[1]
       geography[i, 4] <- elements_extracted[2]
