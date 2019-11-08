@@ -90,7 +90,7 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
-    # Try to refetch data three times before giving up
+    # Try to refetch data five times before giving up
     tries <- 5
 
     while (length(elements) == 0 & tries > 0) {
@@ -121,8 +121,13 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
     ## Advance for loop if listing is defunct
 
     if (remDr$getTitle()[[1]] == "Anywhere · Stays · Airbnb") {
+
       geography[i, 5] <- "NO LISTING"
+
+      .temp_scraping_table <<- geography
+
       message("Listing ", i, " no longer exists.")
+
       next
     }
 
@@ -272,7 +277,8 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
       # Try to filter out spurious uses of the "place is located in" phrase
       if(length(elements) > 1 & sum(str_detect(elements, "span")) > 0) {
         elements <-
-          elements[str_detect(elements, "_abw475")]
+          elements[str_detect(elements, '"ltr"', negate = TRUE)]
+          # elements[str_detect(elements, "_abw475")]
       }
 
       # Logic for cases with standard place name separation
