@@ -275,7 +275,7 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
       }
 
       # Try to filter out spurious uses of the "place is located in" phrase
-      if(length(elements) > 1 & sum(str_detect(elements, "span")) > 0) {
+      if(length(elements) > 1) {
         elements <-
           elements[str_detect(elements, '"ltr"', negate = TRUE)]
           # elements[str_detect(elements, "_abw475")]
