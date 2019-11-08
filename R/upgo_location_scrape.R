@@ -91,7 +91,7 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
-    # Try to refetch data three times before giving up
+    # Try to refetch data five times before giving up
     tries <- 5
 
     while (length(elements) == 0 & tries > 0) {
