@@ -268,9 +268,27 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
       }
 
       if (length(elements) == 0) {
+
+        location <- remDr$findElements("class", "_czm8crp")
+
+        elements <-
+          map_chr(location, ~{
+            .x$getElementAttribute("outerHTML")[[1]]
+          })
+
+        elements <-
+          elements[str_detect(elements, "’s place is located in")]
+
+      }
+
+      if (length(elements) == 0) {
+
         message("Connection problem 2; scraping aborted.")
+
         remDr$close()
+
         if (!docker) rD$server$stop()
+
         return(geography)
       }
 
@@ -280,6 +298,9 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
           elements[str_detect(elements, '"ltr"', negate = TRUE)]
           # elements[str_detect(elements, "_abw475")]
       }
+
+      # Take first element if there are still multiple ones
+      if(length(elements) > 1) elements <- elements[1]
 
       # Logic for cases with standard place name separation
       if(str_detect(elements, "span")) {
