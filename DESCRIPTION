@@ -1,13 +1,15 @@
 Package: upgo
-Title: What the Package Does (One Line, Title Case)
+Title: Utility Functions for UPGo Lab Members
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "David",
+           family = "Wachsmuth",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           email = "david.wachsmuth@mcgill.ca")
+Description: A collection of functions for members of the Urban Politics and
+    Governance research group (UPGo) at McGill University, which are potentially
+    of interest to others. The focus is on tools to enable efficient analysis of
+    spatial big data, particularly short-term rental data.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

@@ -4,23 +4,23 @@
 \alias{upgo_location_scrape}
 \title{Function to scrape location information from Airbnb listings}
 \usage{
-upgo_location_scrape(property, delay = 10, geography = NULL)
+upgo_location_scrape(property, port = 4444L, docker = FALSE)
 }
 \arguments{
 \item{property}{An input table with a field named \code{property_ID} which
 will be used to generate URLs for scraping.}
 
-\item{delay}{A numeric scalar. The number of seconds the function should
-delay in between listings to prevent connection errors or Airbnb shutting
-down access.}
+\item{port}{The port to use to connect to Docker container. If NULL (the
+default), an interactive Chrome window will be opened instead.}
 
-\item{geography}{An existing output table which the function should add to.
-By default the function creates a new table instead.}
+\item{docker}{A logical scalar. Should the scraping be done via a Docker
+container, or by launching a headless Chrome window (default)?}
 }
 \description{
 \code{upgo_location_scrape} scrapes location (city, region and country) from
 Airbnb listings.
 }
 \details{
-TKTK
+A function for scraping location information from Airbnb listings through
+RSelenium, using either a headless Chrome browser or a Docker container.
 }
