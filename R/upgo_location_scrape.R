@@ -252,6 +252,10 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
       elements <-
         elements[str_detect(elements, "’s place is located in")]
 
+      # Try to filter out spurious uses of the "place is located in" phrase
+      elements <-
+        elements[str_detect(elements, '"ltr"', negate = TRUE)]
+
       # Aggressive exception catching to avoid the function terminating
       if (length(elements) == 0) {
 
@@ -265,6 +269,8 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
         elements <-
           elements[str_detect(elements, "’s place is located in")]
 
+        elements <-
+          elements[str_detect(elements, '"ltr"', negate = TRUE)]
       }
 
       if (length(elements) == 0) {
@@ -279,6 +285,8 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
         elements <-
           elements[str_detect(elements, "’s place is located in")]
 
+        elements <-
+          elements[str_detect(elements, '"ltr"', negate = TRUE)]
       }
 
       if (length(elements) == 0) {
@@ -290,13 +298,6 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
         if (!docker) rD$server$stop()
 
         return(geography)
-      }
-
-      # Try to filter out spurious uses of the "place is located in" phrase
-      if(length(elements) > 1) {
-        elements <-
-          elements[str_detect(elements, '"ltr"', negate = TRUE)]
-          # elements[str_detect(elements, "_abw475")]
       }
 
       # Take first element if there are still multiple ones
