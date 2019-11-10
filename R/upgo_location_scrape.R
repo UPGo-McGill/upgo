@@ -256,6 +256,13 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
       elements <-
         elements[str_detect(elements, '"ltr"', negate = TRUE)]
 
+      # If there are multiple candidates but only one with "_abw475", pick it
+      if (length(elements) > 1 & sum(str_detect(elements, "_abw475")) > 0 &
+          sum(str_detect(elements, "_abw475")) < length(elements)) {
+        elements <-
+          elements[str_detect(elements, "_abw475")]
+      }
+
       # Aggressive exception catching to avoid the function terminating
       if (length(elements) == 0) {
 
@@ -271,6 +278,12 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
 
         elements <-
           elements[str_detect(elements, '"ltr"', negate = TRUE)]
+
+        if (length(elements) > 1 & sum(str_detect(elements, "_abw475")) > 0 &
+            sum(str_detect(elements, "_abw475")) < length(elements)) {
+          elements <-
+            elements[str_detect(elements, "_abw475")]
+        }
       }
 
       if (length(elements) == 0) {
@@ -287,6 +300,12 @@ upgo_location_scrape <- function(property, port = 4444L, docker = FALSE) {
 
         elements <-
           elements[str_detect(elements, '"ltr"', negate = TRUE)]
+
+        if (length(elements) > 1 & sum(str_detect(elements, "_abw475")) > 0 &
+            sum(str_detect(elements, "_abw475")) < length(elements)) {
+          elements <-
+            elements[str_detect(elements, "_abw475")]
+        }
       }
 
       if (length(elements) == 0) {
