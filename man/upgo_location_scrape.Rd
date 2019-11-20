@@ -21,6 +21,5 @@ container, or by launching a headless Chrome window (default)?}
 Airbnb listings.
 }
 \details{
-A function for scraping location information from Airbnb listings through
-RSelenium, using either a headless Chrome browser or a Docker container.
+TKTK
 }

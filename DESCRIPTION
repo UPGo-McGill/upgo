@@ -13,10 +13,15 @@ Description: A collection of functions for members of the Urban Politics and
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 2.10)
+Depends:
+    R (>= 2.10),
+    foreach (>= 1.4.7)
 Imports: 
+    doParallel (>= 1.0.15),
     dplyr (>= 0.8),
     ggplot2 (>= 3.2.1),
+    lubridate (>= 1.7.4),
+    parallel (>= 3.6.1),
     purrr (>= 0.3.2),
     rlang (>= 0.3.4),
     RPostgres (>= 1.1.1),
