@@ -7,6 +7,8 @@
 #'
 #' @param property An input table with a field named \code{property_ID} which
 #' will be used to generate URLs for scraping.
+#' @param port A positive integer scalar. What port should the Selenium server
+#' run on?
 #' @param chunk_size The number of listings to scrape in a single batch.
 #' Higher numbers will be slightly faster, but provide less frequent progress
 #' feedback and higher risk of lost data if the scraper encounters an error.
@@ -28,14 +30,26 @@
 #' @export
 
 
-upgo_scrape_location <- function(property, chunk_size = 100, cores = 1L,
-                                 quiet = FALSE) {
+upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
+                                 cores = 1L, quiet = FALSE) {
 
   start_time <- Sys.time()
 
   last_try <- FALSE
 
-  ### Initialize workers
+  ### Initialize server and workers
+
+  ## Start server
+
+  eCaps <- list(chromeOptions = list(
+    args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+    w3c = FALSE
+  ))
+
+  rD <- rsDriver(port = as.integer(port), browser = "chrome",
+                 chromever = "78.0.3904.70", extraCapabilities = eCaps)
+
+  ## Create workers
 
   (cl <- cores %>% makeCluster) %>% registerDoParallel
 
@@ -210,6 +224,8 @@ upgo_scrape_location <- function(property, chunk_size = 100, cores = 1L,
             substr(total_time, 1, 5), " ",
             attr(total_time, "units"), ".")
   }
+
+  rD$server$stop()
 
   rm(.temp_results, envir = .GlobalEnv)
 

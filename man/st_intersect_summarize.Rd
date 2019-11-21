@@ -4,8 +4,14 @@
 \alias{st_intersect_summarize}
 \title{Function to perform areal interpolation of variables}
 \usage{
-st_intersect_summarize(data, destination, group_vars = NULL, population,
-  count_vars, mean_vars)
+st_intersect_summarize(
+  data,
+  destination,
+  group_vars = NULL,
+  population,
+  count_vars,
+  mean_vars
+)
 }
 \arguments{
 \item{data}{TKTK}

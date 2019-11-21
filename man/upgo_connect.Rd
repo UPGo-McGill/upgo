@@ -4,8 +4,7 @@
 \alias{upgo_connect}
 \title{Function to connect to UPGo server}
 \usage{
-upgo_connect(property = TRUE, daily = TRUE, multi = TRUE,
-  reviews = FALSE)
+upgo_connect(property = TRUE, daily = TRUE, multi = TRUE, reviews = FALSE)
 }
 \arguments{
 \item{property}{A logical scalar. Should the property table (named
