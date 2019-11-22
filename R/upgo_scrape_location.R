@@ -95,7 +95,11 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
       slice((1 + missing_last):(100 + missing_last)) %>%
       pull(property_ID)
 
-    message("DEBUG: Beginning to scrape ", length(PIDs), " listings.")
+    message("DEBUG: Beginning to scrape ",
+            length(PIDs),
+            " listings. First PID: ",
+            PIDs[1],
+            ".")
 
     results_new <-
       foreach(i = seq_along(PIDs)) %dopar% {
