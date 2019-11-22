@@ -51,7 +51,7 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
                               extraCapabilities = eCaps)
 
     remDr$open()
-  })
+  }, port)
 
 
   ### Prepare for main loop
