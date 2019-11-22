@@ -23,7 +23,7 @@
 #' @import foreach
 #' @import RSelenium
 #' @importFrom dplyr bind_rows filter last pull slice
-#' @importFrom parallel clusterCall makeCluster
+#' @importFrom parallel clusterCall clusterEvalQ makeCluster
 #' @importFrom purrr map_chr
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
@@ -233,19 +233,9 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 #'
 #' TKTK
 #'
-#' @param property An input table with a field named \code{property_ID} which
-#' will be used to generate URLs for scraping.
-#' @param port The port to use to connect to Docker container. If NULL (the
-#' default), an interactive Chrome window will be opened instead. If `cores` >
-#' 1, this value will be the first in a sequence of integers used.
-#' @param docker A logical scalar. Should the scraping be done via a Docker
-#' container, or by launching a headless Chrome window (default)?
-#' @param cores A positive integer scalar. How many processing cores should be
-#'   used to perform the computationally intensive intersection steps? The
-#'   implementation of multicore processing does not support Windows, so this
-#'   argument should be left with its default value of 1 in those cases.
+#' @param PID An Airbnb property ID to be scraped.
 #' @import RSelenium
-#' @importFrom dplyr last
+#' @importFrom dplyr case_when last
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
 #' @importFrom stringr str_split

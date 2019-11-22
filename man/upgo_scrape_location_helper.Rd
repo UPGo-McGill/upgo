@@ -7,20 +7,7 @@
 upgo_scrape_location_helper(PID)
 }
 \arguments{
-\item{property}{An input table with a field named \code{property_ID} which
-will be used to generate URLs for scraping.}
-
-\item{port}{The port to use to connect to Docker container. If NULL (the
-default), an interactive Chrome window will be opened instead. If `cores` >
-1, this value will be the first in a sequence of integers used.}
-
-\item{docker}{A logical scalar. Should the scraping be done via a Docker
-container, or by launching a headless Chrome window (default)?}
-
-\item{cores}{A positive integer scalar. How many processing cores should be
-used to perform the computationally intensive intersection steps? The
-implementation of multicore processing does not support Windows, so this
-argument should be left with its default value of 1 in those cases.}
+\item{PID}{An Airbnb property ID to be scraped.}
 }
 \description{
 \code{upgo_scrape_location_helper} scrapes the location (city, region and
