@@ -4,11 +4,7 @@
 \alias{upgo_scrape_connect}
 \title{Function to open Selenium server for webscraping}
 \usage{
-upgo_scrape_connect(port = 4445L)
-}
-\arguments{
-\item{port}{A positive integer scalar. What port should the Selenium server
-run on?}
+upgo_scrape_connect()
 }
 \value{
 The function returns a connection object, which should be assigned to

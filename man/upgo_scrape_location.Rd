@@ -4,21 +4,11 @@
 \alias{upgo_scrape_location}
 \title{Function to scrape location information from Airbnb listings}
 \usage{
-upgo_scrape_location(
-  property,
-  port = 4445L,
-  chunk_size = 100,
-  cores = 1L,
-  quiet = FALSE
-)
+upgo_scrape_location(property, chunk_size = 100, cores = 1L, quiet = FALSE)
 }
 \arguments{
 \item{property}{An input table with a field named \code{property_ID} which
 will be used to generate URLs for scraping.}
-
-\item{port}{A positive integer scalar. What port is the Selenium server
-running on? Set this to match the value passed through
-[func(upgo_scrape_connect)].}
 
 \item{chunk_size}{The number of listings to scrape in a single batch.
 Higher numbers will be slightly faster, but provide less frequent progress

@@ -4,20 +4,18 @@
 #'
 #' TKTK
 #'
-#' @param port A positive integer scalar. What port should the Selenium server
-#' run on?
 #' @return The function returns a connection object, which should be assigned to
 #' `rD`.
 #' @import RSelenium
 #' @export
 
-upgo_scrape_connect <- function(port = 4445L) {
+upgo_scrape_connect <- function() {
 
   eCaps <- list(chromeOptions = list(
     args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
     w3c = FALSE))
 
-  rsDriver(port = as.integer(port), browser = "chrome",
+  rsDriver(browser = "chrome",
            chromever = "78.0.3904.70", extraCapabilities = eCaps)
 }
 
