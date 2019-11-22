@@ -21,7 +21,7 @@ Imports:
     dplyr (>= 0.8),
     ggplot2 (>= 3.2.1),
     lubridate (>= 1.7.4),
-    parallel (>= 3.6.1),
+    parallel (>= 3.6.0),
     purrr (>= 0.3.2),
     rlang (>= 0.3.4),
     RPostgres (>= 1.1.1),
