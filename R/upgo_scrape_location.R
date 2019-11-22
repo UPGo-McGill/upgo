@@ -70,6 +70,7 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 
   tries <- 1
   missing_last <- 0
+  no_skip <- FALSE
 
 
   ### Main loop
@@ -81,13 +82,14 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 
     tries <- tries + 1
 
-    if (tries > 2) {
+    if (tries > 2 & no_skip) {
       missing_last <- chunk_size - nrow(results_new) + missing_last
     }
 
     if (missing_last >= nrow(filter(property,
                                     !property_ID %in% results$property_ID))) {
       missing_last <- 0
+      no_skip <- TRUE
     }
 
     PIDs <-
