@@ -15,7 +15,7 @@ upgo_scrape_connect <- function() {
     args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
     w3c = FALSE))
 
-  rsDriver(browser = "chrome",
+  rsDriver(port = 4444L, browser = "chrome",
            chromever = "78.0.3904.70", extraCapabilities = eCaps)
 }
 
