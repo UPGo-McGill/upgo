@@ -16,8 +16,9 @@ upgo_scrape_location(
 \item{property}{An input table with a field named \code{property_ID} which
 will be used to generate URLs for scraping.}
 
-\item{port}{A positive integer scalar. What port should the Selenium server
-run on?}
+\item{port}{A positive integer scalar. What port is the Selenium server
+running on? Set this to match the value passed through
+[func(upgo_scrape_connect)].}
 
 \item{chunk_size}{The number of listings to scrape in a single batch.
 Higher numbers will be slightly faster, but provide less frequent progress

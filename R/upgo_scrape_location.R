@@ -7,8 +7,9 @@
 #'
 #' @param property An input table with a field named \code{property_ID} which
 #' will be used to generate URLs for scraping.
-#' @param port A positive integer scalar. What port should the Selenium server
-#' run on?
+#' @param port A positive integer scalar. What port is the Selenium server
+#' running on? Set this to match the value passed through
+#' [func(upgo_scrape_connect)].
 #' @param chunk_size The number of listings to scrape in a single batch.
 #' Higher numbers will be slightly faster, but provide less frequent progress
 #' feedback and higher risk of lost data if the scraper encounters an error.
@@ -37,20 +38,6 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 
   last_try <- FALSE
 
-  ### Initialize server and workers
-
-  ## Start server
-
-  eCaps <- list(chromeOptions = list(
-    args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-    w3c = FALSE
-  ))
-
-  rD <- rsDriver(port = as.integer(port), browser = "chrome",
-                 chromever = "78.0.3904.70", extraCapabilities = eCaps)
-
-  ## Create workers
-
   (cl <- cores %>% makeCluster) %>% registerDoParallel
 
   clusterEvalQ(cl, {
@@ -76,7 +63,10 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
                    raw = character(0),
                    date = lubridate::ymd())
 
-  max_tries <- 2 * nrow(property) / chunk_size
+  # Set max tries slightly above the minimum needed to process all entries
+  max_tries <-
+    ceiling((nrow(property) / chunk_size) + sqrt(nrow(property) / chunk_size))
+
   tries <- 1
   missing_last <- 0
 
@@ -104,6 +94,8 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
       filter(!property_ID %in% results$property_ID) %>%
       slice((1 + missing_last):(100 + missing_last)) %>%
       pull(property_ID)
+
+    message("DEBUG: Beginning to scrape ", length(PIDs), " listings.")
 
     results_new <-
       foreach(i = seq_along(PIDs)) %dopar% {
@@ -225,16 +217,11 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
             attr(total_time, "units"), ".")
   }
 
-  rD$server$stop()
-
   rm(.temp_results, envir = .GlobalEnv)
 
   return(results)
 
 }
-
-
-
 
 
 
