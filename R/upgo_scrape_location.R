@@ -80,7 +80,7 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 
     tries <- tries + 1
 
-    if (nrow(results_new) > 0) {
+    if (tries > 2) {
       missing_last <- chunk_size - nrow(results_new) + missing_last
     }
 
