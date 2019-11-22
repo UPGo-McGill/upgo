@@ -23,7 +23,7 @@
 #' @import foreach
 #' @import RSelenium
 #' @importFrom dplyr bind_rows filter last pull slice
-#' @importFrom parallel clusterEvalQ makeCluster
+#' @importFrom parallel clusterCall makeCluster
 #' @importFrom purrr map_chr
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
@@ -40,14 +40,15 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
 
   (cl <- cores %>% makeCluster) %>% registerDoParallel
 
-  clusterEvalQ(cl, {
+  clusterCall(cl, function(port) {
     eCaps <- list(chromeOptions = list(
       args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
       w3c = FALSE
     ))
 
     remDr <-
-      RSelenium::remoteDriver(browserName = "chrome", extraCapabilities = eCaps)
+      RSelenium::remoteDriver(port = port, browserName = "chrome",
+                              extraCapabilities = eCaps)
 
     remDr$open()
   })
@@ -94,12 +95,6 @@ upgo_scrape_location <- function(property, port = 4445L, chunk_size = 100,
       filter(!property_ID %in% results$property_ID) %>%
       slice((1 + missing_last):(100 + missing_last)) %>%
       pull(property_ID)
-
-    message("DEBUG: Beginning to scrape ",
-            length(PIDs),
-            " listings. First PID: ",
-            PIDs[1],
-            ".")
 
     results_new <-
       foreach(i = seq_along(PIDs)) %dopar% {
