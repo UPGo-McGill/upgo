@@ -9,16 +9,24 @@
 #'
 #' @param object_name A character string which identifies the file name to be
 #' downloaded.
+#' @param file_path A character string which optionally identifies a subfolder
+#' of the working directory in which to save the output.
 #' @param quiet A logical scalar. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return The output will be a file saved to disk in the current working
-#' directory.
+#' directory (possibly modified by the `file_path` argument).
 
 #' @export
 
-upgo_aws_download <- function(object_name, quiet = FALSE) {
+upgo_aws_download <- function(object_name, file_path = NULL, quiet = FALSE) {
 
   time_1 <- Sys.time()
+
+  file_path_final <- object_name
+
+  if (!missing(file_path)) {
+    file_path_final <- paste0(file_path_final, "/", file_path)
+  }
 
   if (!quiet) message("Beginning file download. (",
                       substr(Sys.time(), 12, 19), ")")
@@ -27,7 +35,8 @@ upgo_aws_download <- function(object_name, quiet = FALSE) {
     bucket = "airdna-data/McGill",
     region = "us-west-1",
     check_region = FALSE,
-    object = object_name)
+    object = object_name,
+    file = file_path_final)
 
   total_time <- Sys.time() - time_1
 

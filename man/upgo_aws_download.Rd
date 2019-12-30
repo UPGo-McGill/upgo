@@ -4,18 +4,21 @@
 \alias{upgo_aws_download}
 \title{Function to download file from the UPGo AWS bucket}
 \usage{
-upgo_aws_download(object_name, quiet = FALSE)
+upgo_aws_download(object_name, file_path = NULL, quiet = FALSE)
 }
 \arguments{
 \item{object_name}{A character string which identifies the file name to be
 downloaded.}
+
+\item{file_path}{A character string which optionally identifies a subfolder
+of the working directory in which to save the output.}
 
 \item{quiet}{A logical scalar. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
 }
 \value{
 The output will be a file saved to disk in the current working
-directory.
+directory (possibly modified by the `file_path` argument).
 }
 \description{
 \code{upgo_aws_download} downloads a specified file from the UPGo AWS bucket
