@@ -31,7 +31,7 @@ upgo_aws_download <- function(object_name, quiet = FALSE) {
 
   total_time <- Sys.time() - time_1
 
-  if (!quiet) {message("Analysis complete. (",
+  if (!quiet) {message("Download complete. (",
                        substr(Sys.time(), 12, 19), ")")}
 
   if (!quiet) {message("Total time: ",
