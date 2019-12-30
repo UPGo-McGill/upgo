@@ -27,7 +27,8 @@ upgo_connect <- function(property = TRUE, daily = TRUE, multi = TRUE,
   con <<- RPostgres::dbConnect(
     RPostgres::Postgres(),
     host = "025wpgs.campus.mcgill.ca",
-    dbname = "airdna")
+    dbname = "airdna",
+    check_interrupts = TRUE)
 
   if (property) property_all <<- dplyr::tbl(con, "property")
   if (daily) daily_all <<- dplyr::tbl(con, "daily")

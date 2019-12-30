@@ -25,7 +25,7 @@ Imports:
     parallel (>= 3.6.0),
     purrr (>= 0.3.2),
     rlang (>= 0.3.4),
-    RPostgres (>= 1.1.1),
+    RPostgres (>= 1.2.0),
     RSelenium (>= 1.7.5),
     sf (>= 0.8),
     stringr (>= 1.4.0),
