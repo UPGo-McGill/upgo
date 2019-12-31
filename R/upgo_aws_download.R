@@ -25,7 +25,7 @@ upgo_aws_download <- function(object_name, file_path = NULL, quiet = FALSE) {
   file_path_final <- object_name
 
   if (!missing(file_path)) {
-    file_path_final <- paste0(file_path_final, "/", file_path)
+    file_path_final <- paste0(file_path, "/", file_path_final)
   }
 
   if (!quiet) message("Beginning file download. (",
