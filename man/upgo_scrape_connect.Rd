@@ -7,12 +7,15 @@
 upgo_scrape_connect()
 }
 \value{
-The function returns a connection object, which should be assigned to
-`rD`.
+The function returns a connection object, which it assigns to `rD` in
+the global environment.
 }
 \description{
 \code{upgo_scrape_connect} opens a Selenium server to allow webscraping.
 }
 \details{
-TKTK
+This function opens a Selenium server to prepare for webscraping using one of
+the upgo_scrape_* functions. For compatibility with those functions, it
+assigns an object `rD` to the global environment, and will overwrite any
+existing object with the same name without warning.
 }

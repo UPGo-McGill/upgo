@@ -4,7 +4,14 @@
 \alias{upgo_connect}
 \title{Function to connect to UPGo server}
 \usage{
-upgo_connect(property = TRUE, daily = TRUE, multi = TRUE, reviews = FALSE)
+upgo_connect(
+  property = TRUE,
+  daily = TRUE,
+  daily_inactive = FALSE,
+  host = TRUE,
+  host_inactive = FALSE,
+  reviews = FALSE
+)
 }
 \arguments{
 \item{property}{A logical scalar. Should the property table (named
@@ -13,8 +20,14 @@ upgo_connect(property = TRUE, daily = TRUE, multi = TRUE, reviews = FALSE)
 \item{daily}{A logical scalar. Should the daily table (named `daily_all`) be
 added to the global environment?}
 
-\item{multi}{A logical scalar. Should the multilisting table (named
-`multi_all`) be added to the global environment?}
+\item{daily_inactive}{A logical scalar. Should the daily_inactive table
+(named `daily_inactive_all`) be added to the global environment?}
+
+\item{host}{A logical scalar. Should the host table (named `host_all`) be
+added to the global environment?}
+
+\item{host_inactive}{A logical scalar. Should the host_inactive table (named
+`host_inactive_all`) be added to the global environment?}
 
 \item{reviews}{A logical scalar. Should the reviews table (named
 `reviews_all`) be added to the global environment?}

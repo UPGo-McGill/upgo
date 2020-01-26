@@ -5,8 +5,8 @@
 #'
 #' A function for disconnecting from the UPGo server and any associated tables.
 #' An open connection with the name `con` will be removed from the global
-#' environment, as will tables named `property_all`, `daily_all`, `multi_all`
-#' and `reviews_all`.
+#' environment, as will tables named `property_all`, `daily_all`,
+#' `daily_inactive_all`, `host_all`, `host_inactive_all`, and `reviews_all`.
 #'
 #' @return The function returns no output, but removes objects from the global
 #' environment.
@@ -14,9 +14,14 @@
 
 upgo_disconnect <- function() {
 
+  con <- property_all <- daily_all <- daily_inactive_all <- host_all <-
+    host_inactive_all <- reviews_all <- NULL
+
   if (exists("property_all")) rm(property_all, envir = .GlobalEnv)
   if (exists("daily_all")) rm(daily_all, envir = .GlobalEnv)
-  if (exists("multi_all")) rm(multi_all, envir = .GlobalEnv)
+  if (exists("daily_inactive_all")) rm(daily_inactive_all, envir = .GlobalEnv)
+  if (exists("host_all")) rm(host_all, envir = .GlobalEnv)
+  if (exists("host_inactive_all")) rm(host_inactive_all, envir = .GlobalEnv)
   if (exists("reviews_all")) rm(reviews_all, envir = .GlobalEnv)
   if (exists("con")) rm(con, envir = .GlobalEnv)
 

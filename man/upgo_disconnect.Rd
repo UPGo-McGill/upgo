@@ -17,6 +17,6 @@ removes the associated tables from the global environment.
 \details{
 A function for disconnecting from the UPGo server and any associated tables.
 An open connection with the name `con` will be removed from the global
-environment, as will tables named `property_all`, `daily_all`, `multi_all`
-and `reviews_all`.
+environment, as will tables named `property_all`, `daily_all`,
+`daily_inactive_all`, `host_all`, `host_inactive_all`, and `reviews_all`.
 }

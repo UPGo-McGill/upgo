@@ -12,7 +12,11 @@ reinstall_strr <- function(branch = NULL) {
     path <- glue::glue("UPGo-McGill/strr@{branch}")
   } else path <- "UPGo-McGill/strr"
 
-  detach("package:strr", unload = TRUE)
-  devtools::install_github(path)
+  if("strr" %in% (.packages())){
+    detach("package:strr", unload=TRUE)
+  }
+
+  devtools::install_github(path, upgrade = "never")
+
   library(strr)
 }

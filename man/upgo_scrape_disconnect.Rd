@@ -18,5 +18,8 @@ and performs associated cleanup.
 connection object from the global environment.
 }
 \details{
-TKTK
+This function closes any active Selenium server currently assigned to the
+object `rD`, any web driver currently assigned to the object `remDr`,
+removes both objects, and performs garbage collection on memory, to ensure
+that subsequent scraping connections will be made successfully.
 }
