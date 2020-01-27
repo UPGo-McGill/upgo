@@ -4,15 +4,11 @@
 \alias{upgo_scrape_location}
 \title{Function to scrape location information from Airbnb listings}
 \usage{
-upgo_scrape_location(property, chunk_size = 100, cores = 1L, quiet = FALSE)
+upgo_scrape_location(property, cores = 1L, quiet = FALSE)
 }
 \arguments{
-\item{property}{An input table with a field named \code{property_ID} which
-will be used to generate URLs for scraping.}
-
-\item{chunk_size}{The number of listings to scrape in a single batch.
-Higher numbers will be slightly faster, but provide less frequent progress
-feedback and higher risk of lost data if the scraper encounters an error.}
+\item{property}{An input table with a field named `property_ID` which will be
+used to generate URLs for scraping.}
 
 \item{cores}{A positive integer scalar. How many processing cores should be
 used to perform the computationally intensive intersection steps? The
@@ -21,6 +17,11 @@ argument should be left with its default value of 1 in those cases.}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
+}
+\value{
+A table with property_ID, city, region, and country, along with the
+raw strings used to identify the location and the date on which the scrape
+was performed.
 }
 \description{
 \code{upgo_scrape_location} scrapes location (city, region and country) from
