@@ -10,6 +10,9 @@
 #' @param chunk_size A positive integer. The number of listings to be scraped in
 #' one batch. Higher values will increase performance, but may be more
 #' vulnerable to rate-limiting and data loss.
+#' @param scrape_rate A positive integer. How many listings to scrape per
+#' minute? This is a temporary setting while proper defaults are tested
+#' empirically.
 #' @param cores A positive integer scalar. How many processing cores should be
 #' used to perform the computationally intensive intersection steps? The
 #' implementation of multicore processing does not support Windows, so this
@@ -34,8 +37,8 @@
 #' @export
 
 
-upgo_scrape_location <- function(property, chunk_size = 100, cores = 1L,
-                                 quiet = FALSE) {
+upgo_scrape_location <- function(property, chunk_size = 100,
+                                 scrape_rate = 75, cores = 1L, quiet = FALSE) {
 
   ### Initialization ###########################################################
 
@@ -180,7 +183,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, cores = 1L,
 
     ## 80 listings/minute is safe maximum
 
-    time_allow <- chunk_size * 0.75
+    time_allow <- chunk_size * scrape_rate / 60
     time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
 
     Sys.sleep(time_leftover)
