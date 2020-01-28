@@ -69,7 +69,7 @@ upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
     mutate(city = NA_character_,
            region = NA_character_,
            country = NA_character_,
-           raw = "HOMEAWAY",
+           raw = list("HOMEAWAY"),
            date = Sys.Date())
 
   property <-
