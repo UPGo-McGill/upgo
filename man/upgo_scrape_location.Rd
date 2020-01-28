@@ -4,11 +4,15 @@
 \alias{upgo_scrape_location}
 \title{Function to scrape location information from Airbnb listings}
 \usage{
-upgo_scrape_location(property, cores = 1L, quiet = FALSE)
+upgo_scrape_location(property, chunk_size = 100, cores = 1L, quiet = FALSE)
 }
 \arguments{
 \item{property}{An input table with a field named `property_ID` which will be
 used to generate URLs for scraping.}
+
+\item{chunk_size}{A positive integer. The number of listings to be scraped in
+one batch. Higher values will increase performance, but may be more
+vulnerable to rate-limiting and data loss.}
 
 \item{cores}{A positive integer scalar. How many processing cores should be
 used to perform the computationally intensive intersection steps? The

@@ -7,6 +7,9 @@
 #'
 #' @param property An input table with a field named `property_ID` which will be
 #' used to generate URLs for scraping.
+#' @param chunk_size A positive integer. The number of listings to be scraped in
+#' one batch. Higher values will increase performance, but may be more
+#' vulnerable to rate-limiting and data loss.
 #' @param cores A positive integer scalar. How many processing cores should be
 #' used to perform the computationally intensive intersection steps? The
 #' implementation of multicore processing does not support Windows, so this
@@ -31,7 +34,8 @@
 #' @export
 
 
-upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
+upgo_scrape_location <- function(property, chunk_size = 100, cores = 1L,
+                                 quiet = FALSE) {
 
   ### Initialization ###########################################################
 
@@ -88,8 +92,8 @@ upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
 
   # Set max tries slightly above the minimum needed to process all entries
   max_tries <-
-    ceiling((nrow(property) / 100) +
-              2 * sqrt(nrow(property) / 100))
+    ceiling((nrow(property) / chunk_size) +
+              2 * sqrt(nrow(property) / chunk_size))
 
   # Set other flags
   tries <- 0 # How many tries so far
@@ -111,7 +115,7 @@ upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
     PIDs <-
       property %>%
       filter(!.data$property_ID %in% results$property_ID) %>%
-      slice(1:100) %>%
+      slice(1:chunk_size) %>%
       pull(.data$property_ID) %>%
       substr(4, 15)
 
@@ -176,7 +180,7 @@ upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
 
     ## 80 listings/minute is safe maximum
 
-    time_allow <- nrow(results_new) * 0.75
+    time_allow <- chunk_size * 0.75
     time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
 
     Sys.sleep(time_leftover)
