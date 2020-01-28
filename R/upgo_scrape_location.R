@@ -171,6 +171,16 @@ upgo_scrape_location <- function(property, cores = 1L, quiet = FALSE) {
       flush.console()
     }
 
+
+    ### Wait to exit loop if scraping is too fast ##############################
+
+    ## 80 listings/minute is safe maximum
+
+    time_allow <- nrow(results_new) * 0.75
+    time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
+
+    Sys.sleep(time_leftover)
+
   }
 
 
