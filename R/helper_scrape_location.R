@@ -34,7 +34,7 @@ helper_scrape_location <- function(PID) {
 
   ### Test title for missing listing and exit early if so ######################
 
-  if (remDr$getTitle()[[1]] == "Anywhere · Stays · Airbnb") {
+  if (remDr$getTitle()[[1]] == "Anywhere \u00b7 Stays \u00b7 Airbnb") {
 
     scrape_result[1, 2] <- list("NO LISTING")
 
@@ -49,7 +49,7 @@ helper_scrape_location <- function(PID) {
 
   ### Test title for missing listing again #####################################
 
-  if (remDr$getTitle()[[1]] == "Anywhere · Stays · Airbnb") {
+  if (remDr$getTitle()[[1]] == "Anywhere \u00b7 Stays \u00b7 Airbnb") {
 
     scrape_result[1, 2] <- list("NO LISTING")
 

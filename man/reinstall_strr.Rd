@@ -11,8 +11,8 @@ reinstall_strr(branch = NULL)
 not the master branch (default).}
 }
 \value{
-There is no tangible output to the function, simply the detaching,
-updating and reattaching of the strr package.
+There is no tangible output to the function, simply the detaching and
+updating the strr package.
 }
 \description{
 Function to reinstall the strr package from GitHub

@@ -2,8 +2,8 @@
 #'
 #' @param branch A character string identifying the branch to be installed, if
 #' not the master branch (default).
-#' @return There is no tangible output to the function, simply the detaching,
-#' updating and reattaching of the strr package.
+#' @return There is no tangible output to the function, simply the detaching and
+#' updating the strr package.
 #' @export
 
 reinstall_strr <- function(branch = NULL) {
@@ -17,6 +17,4 @@ reinstall_strr <- function(branch = NULL) {
   }
 
   devtools::install_github(path, upgrade = "never")
-
-  library(strr)
 }
