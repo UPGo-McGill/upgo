@@ -21,7 +21,7 @@ upgo_scrape_connect <- function() {
     w3c = FALSE))
 
   rD <<- rsDriver(port = 4444L, browser = "chrome",
-                  chromever = "78.0.3904.70", extraCapabilities = eCaps)
+                  chromever = "79.0.3945.36", extraCapabilities = eCaps)
 }
 
 
