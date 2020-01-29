@@ -28,7 +28,7 @@
 upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
                          host = TRUE, host_inactive = FALSE, reviews = FALSE) {
 
-  con <- property_all <- daily_all <- daily_inactive_all <- host_all <-
+  property_all <- daily_all <- daily_inactive_all <- host_all <-
     host_inactive_all <- reviews_all <- NULL
 
   con <<- RPostgres::dbConnect(
@@ -44,5 +44,6 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
   if (host_inactive) host_inactive_all <<- dplyr::tbl(con, "host_inactive")
   if (reviews) reviews_all <<- dplyr::tbl(con, "reviews")
 
+  con <- NULL
 }
 
