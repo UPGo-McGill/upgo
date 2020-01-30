@@ -7,8 +7,6 @@
 #' TKTK
 #'
 #' @param PID An Airbnb property ID to be scraped.
-#' @param cl How many parallel scrapers are running.
-#' @param scrape_rt How many listings can be scraped per minute.
 #' @import RSelenium
 #' @importFrom dplyr case_when last
 #' @importFrom tibble tibble
@@ -16,24 +14,24 @@
 #' @importFrom stringr str_split
 #' @importFrom purrr map_chr
 
-helper_scrape_location <- function(PID, cl, scrape_rt) {
+helper_scrape_location <- function(PID) {
 
   ### Initialize objects #######################################################
 
   ## Prepare exit handler
 
-  start_time <- Sys.time()
+  # start_time <- Sys.time()
 
-  # Need to make sure total scraping rate stays under certain threshold
-  # time_allow <- cl * 60 / scrape_rt
-  time_allow <- 0.5
-
-  if (scrape_rt > 0) {
-    on.exit(expr = {
-      loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
-      Sys.sleep(max(time_allow - loop_time, 0))
-    })
-  }
+  # # Need to make sure total scraping rate stays under certain threshold
+  # # time_allow <- cl * 60 / scrape_rt
+  # time_allow <- 0.5
+  #
+  # if (scrape_rt > 0) {
+  #   on.exit(expr = {
+  #     loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
+  #     Sys.sleep(max(time_allow - loop_time, 0))
+  #   })
+  # }
 
 
   ## Prepare results objects

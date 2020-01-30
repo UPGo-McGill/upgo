@@ -48,29 +48,33 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
   start_time <- Sys.time()
 
-  .temp_results <- i <- proxy <- NULL
+  .temp_results <- i <- NULL
 
 
   ### Start clusters and web drivers ###########################################
 
   (cl <- cores %>% makeCluster()) %>% registerDoParallel()
 
-  # if (missing(proxies)) {
-  #   clusterEvalQ(cl, {
-  #     eCaps <- list(chromeOptions = list(
-  #       args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-  #       w3c = FALSE
-  #     ))
-  #
-  #     remDr <-
-  #       RSelenium::remoteDriver(browserName = "chrome",
-  #                               extraCapabilities = eCaps)
-  #
-  #     remDr$open()
-  #   })
-  # } else {
+  if (missing(proxies)) {
+    clusterEvalQ(cl, {
+      eCaps <- list(chromeOptions = list(
+        args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+        w3c = FALSE
+      ))
 
-    scrape_rate <- 0
+      remDr <-
+        RSelenium::remoteDriver(browserName = "chrome",
+                                extraCapabilities = eCaps)
+
+      remDr$open()
+    })
+  } else {
+
+    if (!quiet) {
+      message(silver(glue("Scraping with {cores} proxies.")))
+      }
+
+    # scrape_rate <- 0
 
     clusterApply(cl, proxies, function(x) {proxy <<- x})
 
@@ -89,7 +93,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
     })
 
 
-  # }
+  }
 
 
 
@@ -155,7 +159,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
         tryCatch(
 
-          helper_scrape_location(PIDs[i], cores, scrape_rate),
+          helper_scrape_location(PIDs[i]),
           # Aggressive error handling to keep the function from exiting
           error = function(e) {
             tibble(property_ID = paste0("ab-", PIDs[i]),
