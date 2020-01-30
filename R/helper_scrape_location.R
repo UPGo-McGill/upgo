@@ -25,10 +25,13 @@ helper_scrape_location <- function(PID, cl, scrape_rt) {
   start_time <- Sys.time()
 
   # Need to make sure total scraping rate stays under certain threshold
-  time_allow <- cl * 60 / scrape_rt
+  # time_allow <- cl * 60 / scrape_rt
+  time_allow <- 0.5
 
-  on.exit(Sys.sleep(max(time_allow - as.numeric(Sys.time() - start_time,
-                                                units = 'secs'), 0)))
+  on.exit(expr = {
+    loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
+    Sys.sleep(max(time_allow - loop_time), 0)
+    })
 
 
   ## Prepare results objects
