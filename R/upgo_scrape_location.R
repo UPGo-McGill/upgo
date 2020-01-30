@@ -12,9 +12,6 @@
 #' vulnerable to rate-limiting and data loss.
 #' @param proxies Character vector of IPs to use for proxy connections. If
 #' supplied, this must be at least as long as the number of cores.
-#' @param scrape_rate A positive integer. How many listings to scrape per
-#' minute? This is a temporary setting while proper defaults are tested
-#' empirically.
 #' @param cores A positive integer scalar. How many processing cores should be
 #' used to perform the computationally intensive intersection steps? The
 #' implementation of multicore processing does not support Windows, so this
@@ -40,7 +37,7 @@
 
 
 upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
-                                 scrape_rate = 75, cores = 1L, quiet = FALSE) {
+                                 cores = 1L, quiet = FALSE) {
 
   ### Initialization ###########################################################
 
@@ -49,6 +46,14 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
   start_time <- Sys.time()
 
   .temp_results <- i <- NULL
+
+  results <-
+    tibble(property_ID = character(),
+           city = character(),
+           region = character(),
+           country = character(),
+           raw = list(),
+           date = Sys.Date())
 
 
   ### Start clusters and web drivers ###########################################
@@ -98,11 +103,9 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
   }
 
 
-
-
   ### Extract HA listings ######################################################
 
-  results <- results_new <-
+  results_HA <-
     property %>%
     filter(str_starts(.data$property_ID, "ha-")) %>%
     select(.data$property_ID) %>%
@@ -118,7 +121,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
   if (!quiet) {
     message(silver(glue(
-      "{nrow(results)} HomeAway listings removed. ",
+      "{nrow(results_HA)} HomeAway listings removed. ",
       "{nrow(property)} listings to be scraped."
     )))
   }
@@ -156,7 +159,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
       substr(4, 15)
 
     # Do minimum possible work inside parallel processes
-    results_raw <-
+    results_new <-
       foreach(i = seq_along(PIDs)) %dopar% {
 
         tryCatch(
@@ -175,7 +178,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
     # Remove empty rows and parse results
     results_new <-
-      results_raw %>%
+      results_new %>%
       bind_rows() %>%
       filter(.data$property_ID %in% property$property_ID, !is.na(.data$raw)) %>%
       helper_scrape_location_parse()
@@ -210,17 +213,6 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
           )))
       flush.console()
     }
-
-
-    ### Wait to exit loop if scraping is too fast ##############################
-
-    ## 80 listings/minute is safe maximum
-
-    # time_allow <- chunk_size * 60 / scrape_rate
-    # time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
-    #
-    # Sys.sleep(time_leftover)
-
   }
 
 
@@ -233,6 +225,9 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
   # Stop parallel cluster
   doParallel::stopImplicitCluster()
+
+  # Rbind HA listings into scraped output
+  results <- bind_rows(results, results_HA)
 
   total_time <- Sys.time() - start_time
 
@@ -255,6 +250,9 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
   # Delete temporary results object once it's clear the real object is safe
   rm(.temp_results, envir = .GlobalEnv)
+
+  # Satisfy R CMD check
+  proxy <- NULL
 
   return(results)
 

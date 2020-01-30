@@ -8,7 +8,6 @@ upgo_scrape_location(
   property,
   chunk_size = 100,
   proxies = NULL,
-  scrape_rate = 75,
   cores = 1L,
   quiet = FALSE
 )
@@ -23,10 +22,6 @@ vulnerable to rate-limiting and data loss.}
 
 \item{proxies}{Character vector of IPs to use for proxy connections. If
 supplied, this must be at least as long as the number of cores.}
-
-\item{scrape_rate}{A positive integer. How many listings to scrape per
-minute? This is a temporary setting while proper defaults are tested
-empirically.}
 
 \item{cores}{A positive integer scalar. How many processing cores should be
 used to perform the computationally intensive intersection steps? The

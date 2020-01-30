@@ -18,24 +18,6 @@ helper_scrape_location <- function(PID) {
 
   ### Initialize objects #######################################################
 
-  ## Prepare exit handler
-
-  # start_time <- Sys.time()
-
-  # # Need to make sure total scraping rate stays under certain threshold
-  # # time_allow <- cl * 60 / scrape_rt
-  # time_allow <- 0.5
-  #
-  # if (scrape_rt > 0) {
-  #   on.exit(expr = {
-  #     loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
-  #     Sys.sleep(max(time_allow - loop_time, 0))
-  #   })
-  # }
-
-
-  ## Prepare results objects
-
   scrape_result <- tibble(property_ID = character(), raw = list())
 
   scrape_result[1, 1] <- paste0("ab-", PID)
@@ -121,19 +103,14 @@ helper_scrape_location <- function(PID) {
 
 
 
-
-
 #' Helper function to scrape location information from an Airbnb listing
 #'
 #' \code{helper_scrape_location_parse} scrapes the location (city, region and
 #' country) from a single Airbnb listing and forwards to the calling function
 #' for further processing.
 #'
-#' TKTK
-#'
 #' @param results The interim results helper_scrape_location.
-#' @import RSelenium
-#' @importFrom dplyr case_when last select
+#' @importFrom dplyr bind_rows case_when filter last mutate select
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_replace str_split
 #' @importFrom purrr map map_chr map_int map_lgl

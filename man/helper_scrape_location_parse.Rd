@@ -14,6 +14,3 @@ helper_scrape_location_parse(results)
 country) from a single Airbnb listing and forwards to the calling function
 for further processing.
 }
-\details{
-TKTK
-}
