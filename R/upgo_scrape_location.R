@@ -70,6 +70,8 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
     })
   } else {
 
+    proxies <- proxies[1:cores]
+
     if (!quiet) {
       message(silver(glue("Scraping with {cores} proxies.")))
       }
