@@ -28,10 +28,12 @@ helper_scrape_location <- function(PID, cl, scrape_rt) {
   # time_allow <- cl * 60 / scrape_rt
   time_allow <- 0.5
 
-  on.exit(expr = {
-    loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
-    Sys.sleep(max(time_allow - loop_time), 0)
+  if (scrape_rt > 0) {
+    on.exit(expr = {
+      loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
+      Sys.sleep(max(time_allow - loop_time), 0)
     })
+  }
 
 
   ## Prepare results objects

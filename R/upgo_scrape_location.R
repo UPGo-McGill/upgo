@@ -161,7 +161,7 @@ upgo_scrape_location <- function(property, chunk_size = 100,
 
     loop_time <- Sys.time() - loop_start
 
-    scrape_rate <-
+    scrape_r <-
       round(nrow(results_new) / as.numeric(loop_time, units = 'mins'))
 
     remaining_listings <-
@@ -171,7 +171,7 @@ upgo_scrape_location <- function(property, chunk_size = 100,
       message(
         silver(glue("{nrow(results)} listings scraped (current rate ")),
         cyan(glue(
-          "{scrape_rate}/minute")),
+          "{scrape_r}/minute")),
         silver(glue(
           "). {remaining_listings} listings left."
           )))
