@@ -31,7 +31,7 @@ helper_scrape_location <- function(PID, cl, scrape_rt) {
   if (scrape_rt > 0) {
     on.exit(expr = {
       loop_time <- as.numeric(Sys.time() - start_time, units = 'secs')
-      Sys.sleep(max(time_allow - loop_time), 0)
+      Sys.sleep(max(time_allow - loop_time, 0))
     })
   }
 

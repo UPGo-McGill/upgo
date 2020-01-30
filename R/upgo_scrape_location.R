@@ -10,6 +10,8 @@
 #' @param chunk_size A positive integer. The number of listings to be scraped in
 #' one batch. Higher values will increase performance, but may be more
 #' vulnerable to rate-limiting and data loss.
+#' @param proxies Character vector of IPs to use for proxy connections. If
+#' supplied, this must be at least as long as the number of cores.
 #' @param scrape_rate A positive integer. How many listings to scrape per
 #' minute? This is a temporary setting while proper defaults are tested
 #' empirically.
@@ -28,7 +30,7 @@
 #' @importFrom crayon cyan silver
 #' @importFrom dplyr arrange bind_rows filter last pull slice
 #' @importFrom glue glue
-#' @importFrom parallel clusterCall clusterEvalQ makeCluster
+#' @importFrom parallel clusterApply clusterCall clusterEvalQ makeCluster
 #' @importFrom purrr map_chr
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
@@ -37,7 +39,7 @@
 #' @export
 
 
-upgo_scrape_location <- function(property, chunk_size = 100,
+upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
                                  scrape_rate = 75, cores = 1L, quiet = FALSE) {
 
   ### Initialization ###########################################################
@@ -46,25 +48,50 @@ upgo_scrape_location <- function(property, chunk_size = 100,
 
   start_time <- Sys.time()
 
-  .temp_results <- i <- NULL
+  .temp_results <- i <- proxy <- NULL
 
 
   ### Start clusters and web drivers ###########################################
 
-  (cl <- cores %>% makeCluster) %>% registerDoParallel
+  (cl <- cores %>% makeCluster()) %>% registerDoParallel()
 
-  clusterEvalQ(cl, {
-    eCaps <- list(chromeOptions = list(
-      args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-      w3c = FALSE
-    ))
+  if (missing(proxies)) {
+    clusterEvalQ(cl, {
+      eCaps <- list(chromeOptions = list(
+        args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+        w3c = FALSE
+      ))
 
-    remDr <-
-      RSelenium::remoteDriver(browserName = "chrome",
-                              extraCapabilities = eCaps)
+      remDr <-
+        RSelenium::remoteDriver(browserName = "chrome",
+                                extraCapabilities = eCaps)
 
-    remDr$open()
-  })
+      remDr$open()
+    })
+  } else {
+
+    scrape_rate <- 0
+
+    clusterApply(cl, proxies, function(x) {proxy <<- x})
+
+    clusterEvalQ(cl, {
+      eCaps <- list(chromeOptions = list(
+        args = c('--headless', '--disable-gpu', '--window-size=1280,800',
+                 proxy),
+        w3c = FALSE
+      ))
+
+      remDr <-
+        RSelenium::remoteDriver(browserName = "chrome",
+                                extraCapabilities = eCaps)
+
+      remDr$open()
+    })
+
+
+  }
+
+
 
 
   ### Extract HA listings ######################################################
