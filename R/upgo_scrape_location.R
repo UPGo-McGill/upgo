@@ -55,20 +55,20 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
   (cl <- cores %>% makeCluster()) %>% registerDoParallel()
 
-  if (missing(proxies)) {
-    clusterEvalQ(cl, {
-      eCaps <- list(chromeOptions = list(
-        args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-        w3c = FALSE
-      ))
-
-      remDr <-
-        RSelenium::remoteDriver(browserName = "chrome",
-                                extraCapabilities = eCaps)
-
-      remDr$open()
-    })
-  } else {
+  # if (missing(proxies)) {
+  #   clusterEvalQ(cl, {
+  #     eCaps <- list(chromeOptions = list(
+  #       args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+  #       w3c = FALSE
+  #     ))
+  #
+  #     remDr <-
+  #       RSelenium::remoteDriver(browserName = "chrome",
+  #                               extraCapabilities = eCaps)
+  #
+  #     remDr$open()
+  #   })
+  # } else {
 
     scrape_rate <- 0
 
@@ -89,7 +89,7 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
     })
 
 
-  }
+  # }
 
 
 
