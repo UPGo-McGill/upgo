@@ -4,10 +4,14 @@
 \alias{helper_scrape_location}
 \title{Helper function to scrape location information from an Airbnb listing}
 \usage{
-helper_scrape_location(PID)
+helper_scrape_location(PID, cl, scrape_rt)
 }
 \arguments{
 \item{PID}{An Airbnb property ID to be scraped.}
+
+\item{cl}{How many parallel scrapers are running.}
+
+\item{scrape_rt}{How many listings can be scraped per minute.}
 }
 \description{
 \code{helper_scrape_location} scrapes the location (city, region and

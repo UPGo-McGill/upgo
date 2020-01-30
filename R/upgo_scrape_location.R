@@ -128,7 +128,7 @@ upgo_scrape_location <- function(property, chunk_size = 100,
 
         tryCatch(
 
-          helper_scrape_location(PIDs[i]),
+          helper_scrape_location(PIDs[i], cores, scrape_rate),
           # Aggressive error handling to keep the function from exiting
           error = function(e) {
             tibble(property_ID = paste0("ab-", PIDs[i]),
@@ -183,10 +183,10 @@ upgo_scrape_location <- function(property, chunk_size = 100,
 
     ## 80 listings/minute is safe maximum
 
-    time_allow <- chunk_size * 60 / scrape_rate
-    time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
-
-    Sys.sleep(time_leftover)
+    # time_allow <- chunk_size * 60 / scrape_rate
+    # time_leftover <- max(time_allow - as.numeric(loop_time, units = 'secs'), 0)
+    #
+    # Sys.sleep(time_leftover)
 
   }
 
