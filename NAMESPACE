@@ -2,6 +2,7 @@
 
 export(gg_bbox)
 export(reinstall_strr)
+export(st_intersect_summarize)
 export(upgo_aws_download)
 export(upgo_connect)
 export(upgo_disconnect)

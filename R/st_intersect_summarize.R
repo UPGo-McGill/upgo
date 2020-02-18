@@ -42,6 +42,7 @@
 #' @importFrom purrr reduce
 #' @importFrom rlang .data :=
 #' @importFrom sf st_area st_crs st_drop_geometry st_intersection st_transform
+#' @export
 
 st_intersect_summarize <- function(data, destination, population,
                                    group_vars = NULL, count_vars = NULL,
