@@ -31,12 +31,12 @@ upgo_aws_download <- function(object_name, file_path = NULL, quiet = FALSE) {
   if (!quiet) message("Beginning file download. (",
                       substr(Sys.time(), 12, 19), ")")
 
-  aws.s3::save_object(
-    bucket = "airdna-data/McGill",
-    region = "us-west-1",
-    check_region = FALSE,
-    object = object_name,
-    file = file_path_final)
+  upgo_bucket <- paws::s3()
+
+  obj <- upgo_bucket$get_object(Bucket = "airdna-data",
+                           Key = paste0("McGill/", object_name))
+
+  writeBin(obj$Body, con = file_path_final)
 
   total_time <- Sys.time() - time_1
 

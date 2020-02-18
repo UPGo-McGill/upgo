@@ -7,24 +7,37 @@
 st_intersect_summarize(
   data,
   destination,
-  group_vars = NULL,
   population,
-  count_vars,
-  mean_vars
+  group_vars = NULL,
+  count_vars = NULL,
+  mean_vars = NULL
 )
 }
 \arguments{
-\item{data}{TKTK}
+\item{data}{An sf data frame with polygon geometries, containing the fields
+to be aggregated and reapportioned.}
 
-\item{destination}{TKTK}
+\item{destination}{An sf data frame with polygon geometries which the data
+should be reapportioned to.}
 
-\item{group_vars}{TKTK}
+\item{population}{The name of a field in the `data` table which sets the
+weighting for other variables.}
 
-\item{population}{TKTK}
+\item{group_vars}{The name of a field in the `destination` table to be used
+to reassemble the data. This will generally be a unique identifier (e.g. a
+GeoUID) of the polygons in the `destination` table. If NULL (default), TKTK}
 
-\item{count_vars}{TKTK}
+\item{count_vars}{A list of field names which are present in the `data`
+table and which represent per-polygon counts which can be meaningfully
+aggregated through addition. (An example is the number of residents who
+commute to work by car.) The variable list must be supplied inside of
+`vars()`.}
 
-\item{mean_vars}{TKTK}
+\item{mean_vars}{A list of field names which are present in the `data`
+table and which represent per-polygon averages which cannot be meaningfully
+aggregated through addition. (An example is the percentage of residents who
+commute to work by car.) The variable list must be supplied inside of
+`vars()`.}
 }
 \value{
 The function returns a table with the variables of interest
@@ -46,4 +59,6 @@ origin geometry (in `data`) to the destination geometry (`destination`),
 using an optional `group_vars` argument to control how the destination
 geometry is assembled. It works by assuming that variables are evenly
 distributed throughout the polygons.
+
+The output will be projected in the same CRS as the `destination` table.
 }
