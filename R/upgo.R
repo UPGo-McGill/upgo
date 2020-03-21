@@ -1,2 +1,2 @@
 ## Quiets R CMD check
-utils::globalVariables(c(".", "remDr"))
+utils::globalVariables(c(".", "remDr", ".con"))

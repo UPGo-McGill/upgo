@@ -10,7 +10,8 @@ upgo_connect(
   daily_inactive = FALSE,
   host = TRUE,
   host_inactive = FALSE,
-  reviews = FALSE
+  reviews = FALSE,
+  remote = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,9 @@ added to the global environment?}
 
 \item{reviews}{A logical scalar. Should the reviews table (named
 `reviews_all`) be added to the global environment?}
+
+\item{remote}{A logical scalar. Should a remote connection be opened even if
+only local tables are being connected?}
 }
 \value{
 The function returns no output, but makes assignments to the global
