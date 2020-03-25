@@ -46,11 +46,8 @@ helper_scrape_location <- function(PID) {
 
   ### Try regular listing type #################################################
 
-  # This now seems to be obsolete
-  # elements <- remDr$findElements("class", "_abw475")
-
-  # This looks like the new class
-  elements <- remDr$findElements("class", "_ktt9n8u")
+  # This now seems to be obsolete?
+  elements <- remDr$findElements("class", "_abw475")
 
 
   ### Test title for missing listing again #####################################
@@ -63,14 +60,15 @@ helper_scrape_location <- function(PID) {
   }
 
 
-  ### If regular doesn't work, try _czm8crp then regular again #################
+  ### If regular doesn't work, try _czm8crp and _ktt9n8u then regular again ####
 
   if (!length(elements) %in% 1:3) {
     elements <- remDr$findElements("class", "_czm8crp")
-
     elements2 <- remDr$findElements("class", "_ktt9n8u")
+    elements3 <- remDr$findElements("class", "_abw475")
 
     if (length(elements2 %in% 1:3)) elements <- elements2
+    if (length(elements3 %in% 1:3)) elements <- elements3
   }
 
 
