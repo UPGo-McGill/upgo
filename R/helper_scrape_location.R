@@ -46,7 +46,11 @@ helper_scrape_location <- function(PID) {
 
   ### Try regular listing type #################################################
 
-  elements <- remDr$findElements("class", "_abw475")
+  # This now seems to be obsolete
+  # elements <- remDr$findElements("class", "_abw475")
+
+  # This looks like the new class
+  elements <- remDr$findElements("class", "_ktt9n8u")
 
 
   ### Test title for missing listing again #####################################
@@ -64,7 +68,7 @@ helper_scrape_location <- function(PID) {
   if (!length(elements) %in% 1:3) {
     elements <- remDr$findElements("class", "_czm8crp")
 
-    elements2 <- remDr$findElements("class", "_abw475")
+    elements2 <- remDr$findElements("class", "_ktt9n8u")
 
     if (length(elements2 %in% 1:3)) elements <- elements2
   }
@@ -109,7 +113,7 @@ helper_scrape_location <- function(PID) {
 #' country) from a single Airbnb listing and forwards to the calling function
 #' for further processing.
 #'
-#' @param results The interim results helper_scrape_location.
+#' @param results The interim results from helper_scrape_location.
 #' @importFrom dplyr bind_rows case_when filter last mutate select
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_replace str_split

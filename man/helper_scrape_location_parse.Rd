@@ -7,7 +7,7 @@
 helper_scrape_location_parse(results)
 }
 \arguments{
-\item{results}{The interim results helper_scrape_location.}
+\item{results}{The interim results from helper_scrape_location.}
 }
 \description{
 \code{helper_scrape_location_parse} scrapes the location (city, region and
