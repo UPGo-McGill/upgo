@@ -16,6 +16,7 @@
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
 #' @importFrom dplyr %>%
+#' @importFrom progress progress_bar
 #' @importFrom purrr map2_dfr
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom stringr str_extract
@@ -124,7 +125,15 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     url_list_short <- vector("list", pages)
 
+    pb <- progress_bar$new(
+      format =
+        "Scraping STR page :current of :total [:bar] :percent, ETA: :eta",
+      total = pages
+    )
+
     for (i in seq_len(pages)) {
+
+      pb$tick()
 
       listings <-
         read_html(paste0(
@@ -144,9 +153,6 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
           str_extract('(?<=href=").*(?=" c)')
         )
 
-      if (!quiet) message("\rSTR page ", i, " of ", pages, " scraped.",
-                          appendLF = FALSE)
-
     }
 
     url_list_short <- unique(unlist(url_list_short))
@@ -155,7 +161,15 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       url_list_short_2 <- vector("list", pages)
 
+      pb <- progress_bar$new(
+        format =
+          "Scraping STR page :current of :total [:bar] :percent, ETA: :eta",
+        total = pages
+      )
+
       for (i in seq_len(pages)) {
+
+        pb$tick()
 
         listings <-
           read_html(paste0(
@@ -176,17 +190,13 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
               str_extract('(?<=href=").*(?=" c)')
           )
 
-        if (!quiet) message("\r STR page ", i, " of ", pages,
-                            " scraped (in ascending order).",
-                            appendLF = FALSE)
-
       }
 
       url_list_short <- unique(c(url_list_short, unlist(url_list_short_2)))
 
     }
 
-    message("\n", length(url_list_short), " STR listing URLs scraped.")
+    message(length(url_list_short), " STR listing URLs scraped.")
   }
 
 
@@ -211,7 +221,15 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     url_list_long <- vector("list", pages)
 
+    pb <- progress_bar$new(
+      format =
+        "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta",
+      total = pages
+    )
+
     for (i in seq_len(pages)) {
+
+      pb$tick()
 
       tryCatch({
 
@@ -235,9 +253,6 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       }, error = function(e) url_list_long[[i]] <- NULL)
 
-      if (!quiet) message("\rLTR page ", i, " of ", pages, " scraped.",
-                          appendLF = FALSE)
-
     }
 
     url_list_long <- unique(unlist(url_list_long))
@@ -246,7 +261,16 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       url_list_long_2 <- vector("list", pages)
 
+      pb <- progress_bar$new(
+        format =
+          "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta",
+        total = pages
+      )
+
       for (i in seq_len(pages)) {
+
+        pb$tick()
+
         tryCatch({
 
           listings <-
@@ -269,18 +293,13 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
             )
 
         }, error = function(e) url_list_long_2[[i]] <- NULL)
-
-        if (!quiet) message("\rLTR page ", i, " of ", pages,
-                            " scraped (in ascending order).",
-                            appendLF = FALSE)
-
       }
 
       url_list_long <- unique(c(url_list_long, unlist(url_list_long_2)))
 
     }
 
-    message("\n", length(url_list_long), " LTR listing URLs scraped.")
+    message(length(url_list_long), " LTR listing URLs scraped.")
   }
 
 
@@ -318,16 +337,21 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   on.exit(.temp_listings <<- listings, add = TRUE)
 
+  pb <- progress_bar$new(
+    format =
+      "Scraping listing :current of :total [:bar] :percent, ETA: :eta",
+    total = length(url_list)
+  )
+
   for (i in seq_along(url_list)) {
+
+    pb$tick()
 
     listings[[i]] <-
       tryCatch({
         paste0("https://www.kijiji.ca", url_list[[i]], "?siteLocale=en_CA") %>%
           read_html(options = "HUGE")
       }, error = function(e) NULL)
-
-    if (!quiet) message("\rListing ", i, " of ", length(url_list), " scraped.",
-                        appendLF = FALSE)
 
     Sys.sleep(timeout)
 
@@ -343,19 +367,18 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   ### Parse HTML ###############################################################
 
-  n <- 19
-  # results <-
-    map2_dfr(temp_listings[1:n], temp_urls[1:n], ~{
+  results <-
+    map2_dfr(listings, url_list, ~{
 
       tryCatch({
-        upgo:::parse_results_kijiji(.x, .y)
+        parse_results_kijiji(.x, .y)
       }, error = function(e) {
 
         redownload <- read_html(
           paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
           options = "HUGE")
 
-        upgo:::parse_results_kijiji(redownload)
+        parse_results_kijiji(redownload)
 
       })
     })
