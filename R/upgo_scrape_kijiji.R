@@ -5,24 +5,24 @@
 #'
 #' @param city A character scalar indicating the city to scrape. Currently
 #' accepts "montreal", "toronto" or "vancouver" as inputs.
-#' @param short_long A character scalar. Should short-term rentals ("short"),
-#' long-term rentals ("long") or both ("both", the default) be scraped?
 #' @param old_results A data frame. If the output of a previous run of
 #' \code{upgo_scrape_kijiji} is supplied, listings previously scraped will not
 #' be scraped again.
+#' @param short_long A character scalar. Should short-term rentals ("short"),
+#' long-term rentals ("long") or both ("both", the default) be scraped?
 #' @param timeout A positive numeric scalar. How long in seconds should the
 #' function pause between scrape attempts to avoid triggering cooldowns?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
 #' @importFrom dplyr %>%
-#' @importFrom purrr map_dfr
+#' @importFrom purrr map2_dfr
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom stringr str_extract
 #' @importFrom xml2 read_html
 #' @export
 
-upgo_scrape_kijiji <- function(city, short_long = "both", old_results = NULL,
+upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
                                timeout = 0.2, quiet = FALSE) {
 
   ### Setup ####################################################################
@@ -344,21 +344,15 @@ upgo_scrape_kijiji <- function(city, short_long = "both", old_results = NULL,
   ### Parse HTML ###############################################################
 
   results <-
-    listings %>%
-    map_dfr(~{
+    map2_dfr(listings, url_list, ~{
 
       tryCatch({
-        parse_results_kijiji(.x)
+        parse_results_kijiji(.x, .y)
       }, error = function(e) {
 
-        url <-
-          .x %>%
-          html_node("head") %>%
-          html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-          html_text() %>%
-          paste0("?siteLocale=en_CA")
-
-        redownload <- read_html(url, options = "HUGE")
+        redownload <- read_html(
+          paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
+          options = "HUGE")
 
         parse_results_kijiji(redownload)
 
@@ -377,6 +371,7 @@ upgo_scrape_kijiji <- function(city, short_long = "both", old_results = NULL,
 #' \code{parse_results_kijiji} parses a scraped Kijiji listing.
 #'
 #' @param .x A single scraped Kijiji listing, as retrieved with read_html.
+#' @param .y A single Kijiji URL.
 #' @return A one-row data frame.
 #' @importFrom dplyr %>% if_else tibble
 #' @importFrom purrr map_dfr
@@ -384,7 +379,36 @@ upgo_scrape_kijiji <- function(city, short_long = "both", old_results = NULL,
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
-parse_results_kijiji <- function(.x) {
+parse_results_kijiji <- function(.x, .y) {
+
+  # Should be 0 for valid listing, and 2 for 404 redirected
+  redirect_check <-
+    .x %>%
+    html_node(xpath = 'body[@id = "PageSRP"]') %>%
+    length()
+
+  if (length(redirect_check) == 2) {
+    return(
+      tibble(
+        id =
+          .y %>%
+          str_extract('(?<=/)[:digit:]*$'),
+        url =
+          paste0("https://www.kijiji.ca", .y),
+        title = NA_character_,
+        short_long = if_else(
+          str_detect(url, "v-location-court-terme|v-short-term-rental"),
+          "short",
+          "long"),
+        date = as.Date(NA),
+        price = NA_real_,
+        location = NA_character_,
+        details = NA_character_,
+        text = NA_character_,
+        photos = vector("list", 1)
+      )
+    )
+  }
 
   expired_check <-
     .x %>%
@@ -392,85 +416,84 @@ parse_results_kijiji <- function(.x) {
     html_text()
 
   if (!is.na(expired_check)) {
-    tibble(
-      id =
-        .x %>%
-        html_node("head") %>%
-        html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-        html_text() %>%
-        str_extract('(?<=/)[:digit:]*$'),
-      url =
-        .x %>%
-        html_node("head") %>%
-        html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-        html_text(),
-      title = NA_character_,
-      short_long = if_else(
-        str_detect(url, "v-location-court-terme|v-short-term-rental"),
-        "short",
-        "long"),
-      date = as.Date(NA),
-      price = NA_real_,
-      location = NA_character_,
-      details = NA_character_,
-      text = NA_character_,
-      photos = vector("list", 1)
+    return(
+      tibble(
+        id =
+          .x %>%
+          html_node("head") %>%
+          html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
+          html_text() %>%
+          str_extract('(?<=/)[:digit:]*$'),
+        url =
+          paste0("https://www.kijiji.ca", .y),
+        title = NA_character_,
+        short_long = if_else(
+          str_detect(url, "v-location-court-terme|v-short-term-rental"),
+          "short",
+          "long"),
+        date = as.Date(NA),
+        price = NA_real_,
+        location = NA_character_,
+        details = NA_character_,
+        text = NA_character_,
+        photos = vector("list", 1)
+      )
     )
-  } else {
-    tibble(
-      id =
-        .x %>%
-        html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
-        html_text(),
-      url =
-        .x %>%
-        html_node("head") %>%
-        html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-        html_text(),
-      title =
-        .x %>%
-        html_node("head") %>%
-        html_node("title") %>%
-        html_text(),
-      short_long = if_else(
-        str_detect(url, "v-location-court-terme|v-short-term-rental"),
-        "short",
-        "long"),
-      date =
-        .x %>%
-        html_node(xpath = '//*/time/@datetime') %>%
-        html_text() %>%
-        as.Date(),
-      price =
-        .x %>%
-        html_node(xpath = '//*[@class = "priceContainer-1419890179"]') %>%
-        html_node(xpath = 'span') %>%
-        html_node(xpath = 'span/@content') %>%
-        html_text() %>%
-        parse_number(),
-      location =
-        .x %>%
-        html_node(xpath = '//*[@class = "address-3617944557"]') %>%
-        html_text(),
-      details =
-        .x %>%
-        html_node(xpath =
-                    '//*[@class = "attributeListWrapper-2108313769"]') %>%
-        html_text(),
-      text =
-        .x %>%
-        html_node(xpath =
-                    '//*[@class = "descriptionContainer-3544745383"]') %>%
-        html_node('div') %>%
-        html_text(),
-      photos = suppressWarnings(list(
-        .x %>%
-          html_nodes(
-            xpath =
-              '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
-          ) %>%
-          str_extract('(?<=image:url..).*(?=..;back)'))))
   }
 
+  tibble(
+    id =
+      .x %>%
+      html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
+      html_text(),
+    url =
+      .x %>%
+      html_node("head") %>%
+      html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
+      html_text(),
+    title =
+      .x %>%
+      html_node("head") %>%
+      html_node("title") %>%
+      html_text(),
+    short_long = if_else(
+      str_detect(url, "v-location-court-terme|v-short-term-rental"),
+      "short",
+      "long"),
+    date =
+      .x %>%
+      html_node(xpath = '//*/time/@datetime') %>%
+      html_text() %>%
+      as.Date(),
+    price =
+      .x %>%
+      html_node(xpath = '//*[@class = "priceContainer-1419890179"]') %>%
+      html_node(xpath = 'span') %>%
+      html_node(xpath = 'span/@content') %>%
+      html_text() %>%
+      parse_number(),
+    location =
+      .x %>%
+      html_node(xpath = '//*[@class = "address-3617944557"]') %>%
+      html_text(),
+    details =
+      .x %>%
+      html_node(xpath =
+                  '//*[@class = "attributeListWrapper-2108313769"]') %>%
+      html_text(),
+    text =
+      .x %>%
+      html_node(xpath =
+                  '//*[@class = "descriptionContainer-3544745383"]') %>%
+      html_node('div') %>%
+      html_text(),
+    photos = suppressWarnings(list(
+      .x %>%
+        html_nodes(
+          xpath =
+            '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
+        ) %>%
+        str_extract('(?<=image:url..).*(?=..;back)')))
+    )
 }
 

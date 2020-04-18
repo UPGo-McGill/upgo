@@ -6,8 +6,8 @@
 \usage{
 upgo_scrape_kijiji(
   city,
-  short_long = "both",
   old_results = NULL,
+  short_long = "both",
   timeout = 0.2,
   quiet = FALSE
 )
@@ -16,12 +16,12 @@ upgo_scrape_kijiji(
 \item{city}{A character scalar indicating the city to scrape. Currently
 accepts "montreal", "toronto" or "vancouver" as inputs.}
 
-\item{short_long}{A character scalar. Should short-term rentals ("short"),
-long-term rentals ("long") or both ("both", the default) be scraped?}
-
 \item{old_results}{A data frame. If the output of a previous run of
 \code{upgo_scrape_kijiji} is supplied, listings previously scraped will not
 be scraped again.}
+
+\item{short_long}{A character scalar. Should short-term rentals ("short"),
+long-term rentals ("long") or both ("both", the default) be scraped?}
 
 \item{timeout}{A positive numeric scalar. How long in seconds should the
 function pause between scrape attempts to avoid triggering cooldowns?}
