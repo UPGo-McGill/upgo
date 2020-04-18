@@ -343,18 +343,19 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   ### Parse HTML ###############################################################
 
-  results <-
-    map2_dfr(listings, url_list, ~{
+  n <- 19
+  # results <-
+    map2_dfr(temp_listings[1:n], temp_urls[1:n], ~{
 
       tryCatch({
-        parse_results_kijiji(.x, .y)
+        upgo:::parse_results_kijiji(.x, .y)
       }, error = function(e) {
 
         redownload <- read_html(
           paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
           options = "HUGE")
 
-        parse_results_kijiji(redownload)
+        upgo:::parse_results_kijiji(redownload)
 
       })
     })
@@ -387,7 +388,7 @@ parse_results_kijiji <- function(.x, .y) {
     html_node(xpath = 'body[@id = "PageSRP"]') %>%
     length()
 
-  if (length(redirect_check) == 2) {
+  if (redirect_check == 2) {
     return(
       tibble(
         id =
