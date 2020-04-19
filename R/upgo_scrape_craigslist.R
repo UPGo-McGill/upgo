@@ -14,6 +14,7 @@
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
+#' @importFrom crayon cyan italic silver
 #' @importFrom dplyr %>%
 #' @importFrom purrr map_dfr
 #' @importFrom rvest html_node html_nodes html_text

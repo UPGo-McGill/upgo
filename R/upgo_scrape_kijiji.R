@@ -10,12 +10,12 @@
 #' be scraped again.
 #' @param short_long A character scalar. Should short-term rentals ("short"),
 #' long-term rentals ("long") or both ("both", the default) be scraped?
-#' @param timeout A positive numeric scalar. How long in seconds should the
-#' function pause between scrape attempts to avoid triggering cooldowns?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
+#' @importFrom crayon bold cyan italic silver
 #' @importFrom dplyr %>%
+#' @importFrom glue glue
 #' @importFrom progress progress_bar
 #' @importFrom purrr map2_dfr
 #' @importFrom rvest html_node html_nodes html_text
@@ -24,7 +24,7 @@
 #' @export
 
 upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
-                               timeout = 0.2, quiet = FALSE) {
+                               quiet = FALSE) {
 
   ### Setup ####################################################################
 
@@ -38,6 +38,8 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   url_end <- "?ad=offering&siteLocale=en_CA"
 
   if (city %in% c("montreal", "Montreal", "montr\u00e9al", "Montr\u00e9al")) {
+
+    city_name <- "Montreal"
 
     if (short_long %in% c("short", "both")) {
 
@@ -61,6 +63,8 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   } else if (city %in% c("toronto", "Toronto")) {
 
+    city_name <- "Toronto"
+
     if (short_long %in% c("short", "both")) {
 
       city_short_1 <- "b-short-term-rental/city-of-toronto/"
@@ -82,6 +86,8 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
   } else if (city %in% c("vancouver", "Vancouver")) {
+
+    city_name <- "Vancouver"
 
     if (short_long %in% c("short", "both")) {
 
@@ -106,9 +112,12 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   ### Get STR URLs #############################################################
 
+  if (!quiet) message(silver(bold(glue(
+    "Scraping Kijiji rental listings in {city_name}."))))
+
   if (short_long %in% c("short", "both")) {
 
-    on.exit(.temp_url_list_short <<- url_list_short)
+    start_time <- Sys.time()
 
     listings_page <-
       read_html(listings_url_short)
@@ -125,15 +134,22 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     url_list_short <- vector("list", pages)
 
-    pb <- progress_bar$new(
-      format =
-        "Scraping STR page :current of :total [:bar] :percent, ETA: :eta",
-      total = pages
-    )
+    on.exit(.temp_url_list_short <<- url_list_short)
+
+    if (!quiet) {
+      pb <- progress_bar$new(
+        format = silver(italic(
+          "Scraping STR page :current of :total [:bar] :percent, ETA: :eta")),
+        total = pages,
+        show_after = 0
+      )
+
+      pb$tick(0)
+    }
 
     for (i in seq_len(pages)) {
 
-      pb$tick()
+      if (!quiet) pb$tick()
 
       listings <-
         read_html(paste0(
@@ -161,15 +177,20 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       url_list_short_2 <- vector("list", pages)
 
-      pb <- progress_bar$new(
-        format =
-          "Scraping STR page :current of :total [:bar] :percent, ETA: :eta",
-        total = pages
-      )
+      if (!quiet) {
+        pb <- progress_bar$new(
+          format = silver(italic(
+            "Scraping STR page :current of :total [:bar] :percent, ETA: :eta")),
+          total = pages,
+          show_after = 0
+        )
+
+        pb$tick(0)
+      }
 
       for (i in seq_len(pages)) {
 
-        pb$tick()
+        if (!quiet) pb$tick()
 
         listings <-
           read_html(paste0(
@@ -196,7 +217,14 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     }
 
-    message(length(url_list_short), " STR listing URLs scraped.")
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(length(url_list_short), "STR listing URLs scraped in "),
+        cyan(time_final_1, time_final_2), silver("."))
+      }
   }
 
 
@@ -204,7 +232,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   if (short_long %in% c("long", "both")) {
 
-    on.exit(.temp_url_list_long <<- url_list_long, add = TRUE)
+    start_time <- Sys.time()
 
     listings_page <-
       read_html(listings_url_long)
@@ -221,15 +249,22 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     url_list_long <- vector("list", pages)
 
-    pb <- progress_bar$new(
-      format =
-        "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta",
-      total = pages
-    )
+    on.exit(.temp_url_list_long <<- url_list_long, add = TRUE)
+
+    if (!quiet) {
+      pb <- progress_bar$new(
+        format = silver(italic(
+          "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta")),
+        total = pages,
+        show_after = 0
+      )
+
+      pb$tick(0)
+    }
 
     for (i in seq_len(pages)) {
 
-      pb$tick()
+      if (!quiet) pb$tick()
 
       tryCatch({
 
@@ -261,15 +296,20 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       url_list_long_2 <- vector("list", pages)
 
-      pb <- progress_bar$new(
-        format =
-          "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta",
-        total = pages
-      )
+      if (!quiet) {
+        pb <- progress_bar$new(
+          format = silver(italic(
+            "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta")),
+          total = pages,
+          show_after = 0
+        )
+
+        pb$tick(0)
+      }
 
       for (i in seq_len(pages)) {
 
-        pb$tick()
+        if (!quiet) pb$tick()
 
         tryCatch({
 
@@ -299,7 +339,14 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     }
 
-    message(length(url_list_long), " LTR listing URLs scraped.")
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(length(url_list_short), "LTR listing URLs scraped in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
   }
 
 
@@ -327,9 +374,6 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   }
 
-  message(length(url_list), " listings ready to be scraped.",
-          appendLF = TRUE)
-
 
   ### Scrape individual pages ##################################################
 
@@ -337,24 +381,28 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   on.exit(.temp_listings <<- listings, add = TRUE)
 
-  pb <- progress_bar$new(
-    format =
-      "Scraping listing :current of :total [:bar] :percent, ETA: :eta",
-    total = length(url_list)
-  )
+  start_time <- Sys.time()
+
+  if (!quiet) {
+    pb <- progress_bar$new(
+      format = silver(italic(
+        "Scraping listing :current of :total [:bar] :percent, ETA: :eta")),
+      total = length(url_list),
+      show_after = 0
+    )
+
+    pb$tick(0)
+  }
 
   for (i in seq_along(url_list)) {
 
-    pb$tick()
+    if (!quiet) pb$tick()
 
     listings[[i]] <-
       tryCatch({
         paste0("https://www.kijiji.ca", url_list[[i]], "?siteLocale=en_CA") %>%
           read_html(options = "HUGE")
       }, error = function(e) NULL)
-
-    Sys.sleep(timeout)
-
   }
 
 
@@ -362,13 +410,33 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
   listings <- listings[!map_lgl(listings, is.null)]
 
-  message("\n", length(listings), " successfully scraped.")
+  total_time <- Sys.time() - start_time
+  time_final_1 <- substr(total_time, 1, 4)
+  time_final_2 <- attr(total_time, 'units')
+
+  if (!quiet) {
+    message(silver(length(url_list_short), "listings scraped in "),
+            cyan(time_final_1, time_final_2), silver("."))
+  }
 
 
   ### Parse HTML ###############################################################
 
+  if (!quiet) {
+    pb <- progress_bar$new(
+      format = silver(italic(
+        "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
+      total = length(listings),
+      show_after = 0
+    )
+
+    pb$tick(0)
+  }
+
   results <-
     map2_dfr(listings, url_list, ~{
+
+      if (!quiet) pb$tick()
 
       tryCatch({
         parse_results_kijiji(.x, .y)
