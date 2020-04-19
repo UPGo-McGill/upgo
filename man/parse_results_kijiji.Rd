@@ -4,12 +4,15 @@
 \alias{parse_results_kijiji}
 \title{Helper function to parse scraped Kijiji listings}
 \usage{
-parse_results_kijiji(.x, .y)
+parse_results_kijiji(.x, .y, city_name)
 }
 \arguments{
 \item{.x}{A single scraped Kijiji listing, as retrieved with read_html.}
 
 \item{.y}{A single Kijiji URL.}
+
+\item{city_name}{A character scalar indicating the name of the city in which
+the listing is located.}
 }
 \value{
 A one-row data frame.
