@@ -13,9 +13,7 @@
 #' @param proxies Character vector of IPs to use for proxy connections. If
 #' supplied, this must be at least as long as the number of cores.
 #' @param cores A positive integer scalar. How many processing cores should be
-#' used to perform the computationally intensive intersection steps? The
-#' implementation of multicore processing does not support Windows, so this
-#' argument should be left with its default value of 1 in those cases.
+#' used to scrape?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with property_ID, city, region, and country, along with the

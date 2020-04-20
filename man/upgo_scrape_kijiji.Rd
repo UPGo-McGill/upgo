@@ -9,6 +9,8 @@ upgo_scrape_kijiji(
   old_results = NULL,
   short_long = "both",
   recovery = FALSE,
+  proxies = NULL,
+  cores = 1L,
   quiet = FALSE
 )
 }
@@ -17,14 +19,20 @@ upgo_scrape_kijiji(
 Currently accepts "montreal", "toronto" or "vancouver" as inputs.}
 
 \item{old_results}{A data frame. If the output of a previous run of
-\code{upgo_scrape_kijiji} is supplied, listings previously scraped will not
-be scraped again.}
+\code{upgo_scrape_kijiji} is supplied, listings previously scraped will be
+incorporated into the new results.}
 
 \item{short_long}{A character scalar. Should short-term rentals ("short"),
 long-term rentals ("long") or both ("both", the default) be scraped?}
 
 \item{recovery}{A logical vector. Should the function attempt to recover
 results from a previous, unsuccessful function call?}
+
+\item{proxies}{Character vector of IPs to use for proxy connections. If
+supplied, this must be at least as long as the number of cores.}
+
+\item{cores}{A positive integer scalar. How many processing cores should be
+used to scrape?}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}

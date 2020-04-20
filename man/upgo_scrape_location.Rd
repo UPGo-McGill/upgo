@@ -24,9 +24,7 @@ vulnerable to rate-limiting and data loss.}
 supplied, this must be at least as long as the number of cores.}
 
 \item{cores}{A positive integer scalar. How many processing cores should be
-used to perform the computationally intensive intersection steps? The
-implementation of multicore processing does not support Windows, so this
-argument should be left with its default value of 1 in those cases.}
+used to scrape?}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}

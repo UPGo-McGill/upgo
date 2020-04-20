@@ -4,7 +4,12 @@
 \alias{upgo_scrape_craigslist}
 \title{Function to scrape Craigslist listings}
 \usage{
-upgo_scrape_craigslist(city, old_results = NULL, timeout = 0.2, quiet = FALSE)
+upgo_scrape_craigslist(
+  city,
+  old_results = NULL,
+  recovery = FALSE,
+  quiet = FALSE
+)
 }
 \arguments{
 \item{city}{A character scalar indicating the city to scrape. It must
@@ -13,10 +18,10 @@ correspond to the domain prefix used for a city's Craigslist site (e.g.
 
 \item{old_results}{A data frame. If the output of a previous run of
 \code{upgo_scrape_craigslist} is supplied, listings previously scraped will
-not be scraped again.}
+be incorporated into the new results.}
 
-\item{timeout}{A positive numeric scalar. How long in seconds should the
-function pause between scrape attempts to avoid triggering cooldowns?}
+\item{recovery}{A logical vector. Should the function attempt to recover
+results from a previous, unsuccessful function call?}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
