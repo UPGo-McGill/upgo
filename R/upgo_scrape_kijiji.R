@@ -21,7 +21,7 @@
 #' @return A table with one row per listing scraped.
 #' @importFrom crayon bold cyan italic silver
 #' @importFrom doSNOW registerDoSNOW
-#' @importFrom dplyr %>% bind_rows if_else
+#' @importFrom dplyr %>% arrange bind_rows if_else
 #' @importFrom glue glue
 #' @importFrom httr GET set_config use_proxy
 #' @importFrom progress progress_bar
@@ -128,6 +128,9 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
 
   ### Initialize multicore processing and proxies ------------------------------
+
+  if (!quiet && cores > 1) message(silver(glue(
+    "Initializing {cores} processing threads.")))
 
   `%dopar%` <- foreach::`%dopar%`
 
@@ -416,14 +419,17 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       updated_results <-
         old_results %>%
-        filter(city = city_name,
+        filter(city == city_name,
                url %in% str_replace(url_list[[n]], '^/',
                                     'https://www.kijiji.ca/')) %>%
         mutate(scraped = Sys.Date())
 
+      if (!quiet) message(silver(glue(
+        "{nrow(updated_results)} previously scraped listings still active.")))
+
       old_results <-
         old_results %>%
-        filter(city = city_name,
+        filter(city == city_name,
                !url %in% str_replace(url_list[[n]], '^/',
                                      'https://www.kijiji.ca/')) %>%
         bind_rows(updated_results)
@@ -474,55 +480,29 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     results[[n]] <-
       map2_dfr(listings[[n]], url_list[[n]], ~{
-
         if (!quiet) pb$tick()
-
-        tryCatch({
-          helper_parse_kijiji(.x, .y, city_name)
-        }, error = function(e) {
-
-          tryCatch({
-
-            redownload <- read_html(
-              paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
-              options = "HUGE")
-
-            helper_parse_kijiji(redownload, .y, city_name)
-
-          }, error = function(e) {
-            tibble(
-              id =
-                .y %>%
-                str_extract('(?<=/)[:digit:]*$'),
-              url =
-                paste0("https://www.kijiji.ca", .y),
-              title = NA_character_,
-              short_long = if_else(
-                str_detect(url, "v-location-court-terme|v-short-term-rental"),
-                "short",
-                "long"),
-              created = as.Date(NA),
-              scraped = Sys.Date(),
-              price = NA_real_,
-              city = city_name,
-              location = NA_character_,
-              bedrooms = NA_character_,
-              bathrooms = NA_character_,
-              furnished = NA,
-              details = NA_character_,
-              text = NA_character_,
-              photos = vector("list", 1)
-            )
-          })
+        helper_parse_kijiji(.x, .y, city_name)
         })
-      })
 
-    ## Set finished_flag upon successfully completing a city
+
+    ### Rbind with old_results if present, then arrange ------------------------
+
+    if (!missing(old_results)) {
+      results[[n]] <-
+        bind_rows(results[[n]], old_results)
+    }
+
+    results[[n]] <-
+      results[[n]] %>%
+      arrange(.data$id)
+
+
+    ### Set finished_flag upon successfully completing a city ------------------
 
     finished_flag[[n]] <- TRUE
 
 
-    ## Clean up
+    ### Clean up ---------------------------------------------------------------
 
     total_time <- Sys.time() - start_time
     time_final_1 <- substr(total_time, 1, 4)
@@ -535,7 +515,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  ### Rbind and return results #################################################
+  #### RBIND AND RETURN RESULTS ################################################
 
   results <- bind_rows(results)
 

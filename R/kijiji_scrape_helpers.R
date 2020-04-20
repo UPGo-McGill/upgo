@@ -74,6 +74,7 @@ helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
 }
 
 
+
 #' Helper function to parse scraped Kijiji listings
 #'
 #' \code{helper_parse_kijiji} parses a scraped Kijiji listing.
@@ -87,9 +88,29 @@ helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
 #' @importFrom purrr map_dfr
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom readr parse_number
-#' @importFrom stringr str_detect
+#' @importFrom stringr str_detect str_replace_all
 
 helper_parse_kijiji <- function(.x, .y, city_name) {
+
+  ### Test if the input is valid, and redownload if not ------------------------
+
+  retry <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
+
+  if (retry) {
+    .x <- read_html(
+      paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
+      options = "HUGE")
+  }
+
+
+  ### Exit if the input is still not valid -------------------------------------
+
+  fail <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
+
+  if (fail) return(helper_error_result(.y, city_name))
+
+
+  ### Check for 404 redirects and expired links --------------------------------
 
   # Should be 0 for valid listing, and 2 for 404 redirected
   redirect_check <-
@@ -97,69 +118,17 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
     html_node(xpath = 'body[@id = "PageSRP"]') %>%
     length()
 
-  if (redirect_check == 2) {
-    return(
-      tibble(
-        id =
-          .y %>%
-          str_extract('(?<=/)[:digit:]*$'),
-        url =
-          paste0("https://www.kijiji.ca", .y),
-        title = NA_character_,
-        short_long = if_else(
-          str_detect(url, "v-location-court-terme|v-short-term-rental"),
-          "short",
-          "long"),
-        created = as.Date(NA),
-        scraped = Sys.Date(),
-        price = NA_real_,
-        city = city_name,
-        location = NA_character_,
-        bedrooms = NA_character_,
-        bathrooms = NA_character_,
-        furnished = NA,
-        details = NA_character_,
-        text = NA_character_,
-        photos = vector("list", 1)
-      )
-    )
-  }
+  if (redirect_check == 2) return(helper_error_result(.y, city_name))
 
   expired_check <-
     .x %>%
     html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
     html_text()
 
-  if (!is.na(expired_check)) {
-    return(
-      tibble(
-        id =
-          .x %>%
-          html_node("head") %>%
-          html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-          html_text() %>%
-          str_extract('(?<=/)[:digit:]*$'),
-        url =
-          paste0("https://www.kijiji.ca", .y),
-        title = NA_character_,
-        short_long = if_else(
-          str_detect(url, "v-location-court-terme|v-short-term-rental"),
-          "short",
-          "long"),
-        created = as.Date(NA),
-        scraped = Sys.Date(),
-        price = NA_real_,
-        city = city_name,
-        location = NA_character_,
-        bedrooms = NA_character_,
-        bathrooms = NA_character_,
-        furnished = NA,
-        details = NA_character_,
-        text = NA_character_,
-        photos = vector("list", 1)
-      )
-    )
-  }
+  if (!is.na(expired_check)) return(helper_error_result(.y, city_name))
+
+
+  ### Parse input --------------------------------------------------------------
 
   tibble(
     id =
@@ -208,11 +177,13 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
             html_text()}),
         .x %>%
           html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]') %>%
-          html_text(),
+          html_text() %>%
+          str_replace_all("\n", ""),
         .x %>%
           html_node(xpath =
                       '//*[@class = "attributeListWrapper-2108313769"]') %>%
-          html_text()),
+          html_text()) %>%
+      str_replace_all("\n", ""),
     text =
       .x %>%
       html_node(xpath =
@@ -248,3 +219,46 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
     select(.data$id:.data$location, .data$bedrooms:.data$furnished,
            .data$details:.data$photos)
 }
+
+
+
+#' Helper function to generate error Kijiji output
+#'
+#' @param .y A single Kijiji URL.
+#' @param city_name A character scalar indicating the name of the city in which
+#' the listing is located.
+#' @return A one-row data frame.
+#' @importFrom dplyr %>% if_else mutate select tibble
+#' @importFrom purrr map_dfr
+#' @importFrom rvest html_node html_nodes html_text
+#' @importFrom readr parse_number
+#' @importFrom stringr str_detect
+
+helper_error_result <- function(.y, city_name) {
+
+  tibble(
+    id =
+      .y %>%
+      str_extract('(?<=/)[:digit:]*$'),
+    url =
+      paste0("https://www.kijiji.ca", .y),
+    title = NA_character_,
+    short_long = if_else(
+      str_detect(url, "v-location-court-terme|v-short-term-rental"),
+      "short",
+      "long"),
+    created = as.Date(NA),
+    scraped = Sys.Date(),
+    price = NA_real_,
+    city = city_name,
+    location = NA_character_,
+    bedrooms = NA_character_,
+    bathrooms = NA_character_,
+    furnished = NA,
+    details = NA_character_,
+    text = NA_character_,
+    photos = vector("list", 1)
+  )
+
+}
+
