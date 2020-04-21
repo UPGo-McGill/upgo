@@ -404,7 +404,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       old_results <-
         old_results %>%
-        filter(city == city_name, !url %in% url_list[[n]]) %>%
+        filter(city != city_name | !url %in% url_list[[n]]) %>%
         bind_rows(updated_results)
 
       url_list[[n]] <-
@@ -476,7 +476,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     time_final_2 <- attr(total_time, 'units')
 
     if (!quiet) {
-      message(silver(nrow(results[[n]]), "listings parsed in "),
+      message(silver(length(listings[[n]]), "listings parsed in "),
               cyan(time_final_1, time_final_2), silver("."))
     }
   }
