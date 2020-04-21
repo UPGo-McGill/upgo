@@ -404,7 +404,8 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       old_results <-
         old_results %>%
-        filter(city != city_name | !url %in% url_list[[n]]) %>%
+        filter(city != city_name |
+                 (city == city_name & !url %in% url_list[[n]])) %>%
         bind_rows(updated_results)
 
       url_list[[n]] <-
@@ -456,7 +457,9 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     if (!missing(old_results)) {
       results[[n]] <-
-        bind_rows(results[[n]], old_results)
+        old_results %>%
+        filter(city == city_name) %>%
+        bind_rows(results[[n]])
     }
 
     results[[n]] <-
