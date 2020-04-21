@@ -35,14 +35,14 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
                                recovery = FALSE, proxies = NULL, cores = 1L,
                                quiet = FALSE) {
 
-  #### SETUP ###################################################################
+  ### SETUP ####################################################################
 
-  ### Initialize variables -----------------------------------------------------
+  ## Initialize variables ------------------------------------------------------
 
   .temp_url_list_short <- .temp_url_list_long <- .temp_url_list <-
     .temp_listings <- .temp_results <- .temp_finished_flag <- i <- NULL
 
-  url_start <- "https://www.kijiji.ca/"
+  url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
 
   # Default to no progress bar
@@ -54,7 +54,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  ### Validate city argument ---------------------------------------------------
+  ## Validate city argument ----------------------------------------------------
 
   if (!all(city %in% c("montreal", "Montreal", "montr\u00e9al", "Montr\u00e9al",
                        "toronto", "Toronto", "vancouver", "Vancouver"))) {
@@ -64,7 +64,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  ### Restore object if recovery == TRUE ---------------------------------------
+  ## Restore object if recovery == TRUE ----------------------------------------
 
   if (recovery) {
 
@@ -98,7 +98,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
 
-  ### Initialize objects if recovery == FALSE ----------------------------------
+  ## Initialize objects if recovery == FALSE -----------------------------------
 
   } else {
 
@@ -127,7 +127,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  ### Initialize multicore processing and proxies ------------------------------
+  ## Initialize multicore processing and proxies -------------------------------
 
   if (!quiet && cores > 1) message(silver(glue(
     "Initializing {cores} processing threads.")))
@@ -147,11 +147,11 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  #### MAIN SCRAPING LOOP ######################################################
+  ### MAIN SCRAPING LOOP #######################################################
 
   for (n in seq_along(city)) {
 
-    ### Get city_name ----------------------------------------------------------
+    ## Get city_name -----------------------------------------------------------
 
     if (city[[n]] %in% c("montreal", "Montreal", "montr\u00e9al",
                          "Montr\u00e9al")) {
@@ -165,7 +165,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ### Skip city if it is already finished in recovery data -------------------
+    ## Skip city if it is already finished in recovery data --------------------
 
     if (finished_flag[[n]]) {
       if (!quiet) message(silver(bold(glue(
@@ -177,19 +177,18 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
       "Scraping Kijiji rental listings in {city_name}."))))
 
 
-    ### Construct listing page URLs --------------------------------------------
+    ## Construct listing page URLs ---------------------------------------------
 
-    ## STR
-
+    # STR
     if (short_long %in% c("short", "both")) {
 
       city_short <- case_when(
         city_name == "Montreal" ~
-          c("b-location-court-terme/ville-de-montreal/", "c42l1700281"),
+          c("/b-location-court-terme/ville-de-montreal/", "c42l1700281"),
         city_name == "Toronto" ~
-          c("b-short-term-rental/city-of-toronto/", "c42l1700273"),
+          c("/b-short-term-rental/city-of-toronto/", "c42l1700273"),
         city_name == "Vancouver" ~
-          c("b-short-term-rental/vancouver/", "c42l1700287")
+          c("/b-short-term-rental/vancouver/", "c42l1700287")
       )
 
       listings_url_short <-
@@ -197,17 +196,16 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ## LTR
-
+    # LTR
     if (short_long %in% c("long", "both")) {
 
       city_long <- case_when(
         city_name == "Montreal" ~
-          c("b-apartments-condos/ville-de-montreal/", "c37l1700281"),
+          c("/b-apartments-condos/ville-de-montreal/", "c37l1700281"),
         city_name == "Toronto" ~
-          c("b-apartments-condos/city-of-toronto/", "c37l1700273"),
+          c("/b-apartments-condos/city-of-toronto/", "c37l1700273"),
         city_name == "Vancouver" ~
-          c("b-apartments-condos/vancouver/", "c37l1700287")
+          c("/b-apartments-condos/vancouver/", "c37l1700287")
       )
 
       listings_url_long <-
@@ -215,15 +213,13 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ### Get STR URLs -----------------------------------------------------------
+    ## Get STR URLs ------------------------------------------------------------
 
     if (short_long %in% c("short", "both")) {
 
       start_time <- Sys.time()
 
-
-      ## Find number of pages to scrape
-
+      # Find number of pages to scrape
       listings_to_scrape <-
         read_html(listings_url_short) %>%
         html_node(xpath = '//*[@class="showing"]') %>%
@@ -234,26 +230,17 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       pages <- min(ceiling(listings_to_scrape / 40), 100)
 
-      url_list_short[[n]] <- vector("list", pages)
-
-
-      ## Prepare progress bar
-
+      # Prepare progress bar
       if (!quiet) {
-        pb <- progress_bar$new(
-          format = silver(italic(
-            "Scraping STR page :current of :total [:bar] :percent, ETA: :eta")),
+        pb <- progress_bar$new(format = silver(italic(
+          "Scraping STR page :current of :total [:bar] :percent, ETA: :eta")),
           # If pages == 100, need to scrape again in ascending order
-          total = if_else(pages == 100, 200, pages),
-          show_after = 0
-        )
+          total = if_else(pages == 100, 200, pages), show_after = 0)
 
         pb$tick(0)
       }
 
-
-      ## Scrape in descending order
-
+      # Scrape in descending order
       url_list_short[[n]] <-
         foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
 
@@ -268,11 +255,10 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
             }, error = function(e) NULL)
         }
 
-      url_list_short[[n]] <- unique(unlist(url_list_short[[n]]))
+      url_list_short[[n]] <-
+        paste0(url_start, unique(unlist(url_list_short[[n]])))
 
-
-      ## If pages == 100, scrape again in ascending order
-
+      # If pages == 100, scrape again in ascending order
       if (pages == 100) {
 
         url_list_short_2 <-
@@ -290,11 +276,13 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
         }
 
         url_list_short[[n]] <-
-          unique(c(url_list_short[[n]], unlist(url_list_short_2)))
+          unique(c(
+            url_list_short[[n]],
+            paste0(url_start, unlist(url_list_short_2))
+            ))
       }
 
-      ## Clean up
-
+      # Clean up
       total_time <- Sys.time() - start_time
       time_final_1 <- substr(total_time, 1, 4)
       time_final_2 <- attr(total_time, 'units')
@@ -307,15 +295,13 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ### Get LTR URLs -----------------------------------------------------------
+    ## Get LTR URLs ------------------------------------------------------------
 
     if (short_long %in% c("long", "both")) {
 
       start_time <- Sys.time()
 
-
-      ## Find number of pages to scrape
-
+      # Find number of pages to scrape
       listings_to_scrape <-
         read_html(listings_url_long) %>%
         html_node(xpath = '//*[@class="showing"]') %>%
@@ -326,26 +312,17 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       pages <- min(ceiling(listings_to_scrape / 40), 100L)
 
-      url_list_long[[n]] <- vector("list", pages)
-
-
-      ## Prepare progress bar
-
+      # Prepare progress bar
       if (!quiet) {
-        pb <- progress_bar$new(
-          format = silver(italic(
-            "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta")),
+        pb <- progress_bar$new(format = silver(italic(
+          "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta")),
           # If pages == 100, need to scrape again in ascending order
-          total = if_else(pages == 100, 200, pages),
-          show_after = 0
-        )
+          total = if_else(pages == 100, 200, pages), show_after = 0)
 
         pb$tick(0)
       }
 
-
-      ## Scrape in descending order
-
+      # Scrape in descending order
       url_list_long[[n]] <-
         foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
 
@@ -360,11 +337,10 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
             }, error = function(e) NULL)
         }
 
-      url_list_long[[n]] <- unique(unlist(url_list_long[[n]]))
+      url_list_long[[n]] <-
+        paste0(url_start, unique(unlist(url_list_long[[n]])))
 
-
-      ## If pages == 100, scrape again in ascending order
-
+      # If pages == 100, scrape again in ascending order
       if (pages == 100) {
 
         url_list_long_2 <-
@@ -382,12 +358,12 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
           }
 
         url_list_long[[n]] <-
-          unique(c(url_list_long[[n]], unlist(url_list_long_2)))
+          unique(c(
+            url_list_long[[n]],
+            paste0(url_start, unlist(url_list_long_2))))
       }
 
-
-      ## Clean up
-
+      # Clean up
       total_time <- Sys.time() - start_time
       time_final_1 <- substr(total_time, 1, 4)
       time_final_2 <- attr(total_time, 'units')
@@ -400,7 +376,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ### Combine URLs into single list ------------------------------------------
+    ## Combine URLs into single list -------------------------------------------
 
     if (short_long == "both") {
       url_list[[n]] <- unique(c(url_list_short[[n]], url_list_long[[n]]))
@@ -410,18 +386,17 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
       url_list[[n]] <- url_list_long[[n]]
     }
 
-    url_list[[n]] <- url_list[[n]][!is.na(url_list[[n]])]
+    url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
+    url_list[[n]] <- str_replace(url_list[[n]], " ", "")
 
 
-    ### Process duplicate listings if old_results is provided ------------------
+    ## Process duplicate listings if old_results is provided -------------------
 
     if (!missing(old_results)) {
 
       updated_results <-
         old_results %>%
-        filter(city == city_name,
-               url %in% str_replace(url_list[[n]], '^/',
-                                    'https://www.kijiji.ca/')) %>%
+        filter(city == city_name, url %in% url_list[[n]]) %>%
         mutate(scraped = Sys.Date())
 
       if (!quiet) message(silver(glue(
@@ -429,30 +404,25 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
       old_results <-
         old_results %>%
-        filter(city == city_name,
-               !url %in% str_replace(url_list[[n]], '^/',
-                                     'https://www.kijiji.ca/')) %>%
+        filter(city == city_name, !url %in% url_list[[n]]) %>%
         bind_rows(updated_results)
 
       url_list[[n]] <-
-        url_list[[n]][!str_replace(url_list[[n]], '^/',
-                                   'https://www.kijiji.ca/') %in%
+        url_list[[n]][!url_list[[n]] %in%
                         old_results[old_results$city == city_name,]$url]
 
     }
 
 
-    ### Scrape individual pages ------------------------------------------------
+    ## Scrape individual pages -------------------------------------------------
 
     start_time <- Sys.time()
 
     listings[[n]] <-
       url_list[[n]] %>%
-      helper_download_listing("https://www.kijiji.ca", "?siteLocale=en_CA",
-                              quiet = quiet)
+      helper_download_listing("", "?siteLocale=en_CA", quiet = quiet)
 
-    ## Clean up
-
+    # Clean up
     total_time <- Sys.time() - start_time
     time_final_1 <- substr(total_time, 1, 4)
     time_final_2 <- attr(total_time, 'units')
@@ -463,17 +433,14 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ### Parse HTML -------------------------------------------------------------
+    ## Parse HTML --------------------------------------------------------------
 
     start_time <- Sys.time()
 
     if (!quiet) {
-      pb <- progress_bar$new(
-        format = silver(italic(
-          "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
-        total = length(listings[[n]]),
-        show_after = 0
-      )
+      pb <- progress_bar$new(format = silver(italic(
+        "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
+        total = length(listings[[n]]), show_after = 0)
 
       pb$tick(0)
     }
@@ -485,7 +452,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
         })
 
 
-    ### Rbind with old_results if present, then arrange ------------------------
+    ## Rbind with old_results if present, then arrange -------------------------
 
     if (!missing(old_results)) {
       results[[n]] <-
@@ -497,12 +464,12 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
       arrange(.data$id)
 
 
-    ### Set finished_flag upon successfully completing a city ------------------
+    ## Set finished_flag upon successfully completing a city -------------------
 
     finished_flag[[n]] <- TRUE
 
 
-    ### Clean up ---------------------------------------------------------------
+    ## Clean up ----------------------------------------------------------------
 
     total_time <- Sys.time() - start_time
     time_final_1 <- substr(total_time, 1, 4)
@@ -515,7 +482,7 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
   }
 
 
-  #### RBIND AND RETURN RESULTS ################################################
+  ### RBIND AND RETURN RESULTS #################################################
 
   results <- bind_rows(results)
 

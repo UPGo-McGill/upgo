@@ -13,7 +13,7 @@
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
-#'
+
 helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
 
   i <- NULL
@@ -74,7 +74,6 @@ helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
 }
 
 
-
 #' Helper function to parse scraped Kijiji listings
 #'
 #' \code{helper_parse_kijiji} parses a scraped Kijiji listing.
@@ -92,25 +91,23 @@ helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
 
 helper_parse_kijiji <- function(.x, .y, city_name) {
 
-  ### Test if the input is valid, and redownload if not ------------------------
+  ### Test if the input is valid, and redownload if not ########################
 
   retry <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
 
   if (retry) {
-    .x <- read_html(
-      paste0("https://www.kijiji.ca", .y, "?siteLocale=en_CA"),
-      options = "HUGE")
+    .x <- read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
   }
 
 
-  ### Exit if the input is still not valid -------------------------------------
+  ### Exit if the input is still not valid #####################################
 
   fail <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
 
   if (fail) return(helper_error_result(.y, city_name))
 
 
-  ### Check for 404 redirects and expired links --------------------------------
+  ### Check for 404 redirects and expired links ################################
 
   # Should be 0 for valid listing, and 2 for 404 redirected
   redirect_check <-
@@ -128,7 +125,22 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
   if (!is.na(expired_check)) return(helper_error_result(.y, city_name))
 
 
-  ### Parse input --------------------------------------------------------------
+  ### Parse input ##############################################################
+
+  ## Find details class --------------------------------------------------------
+
+  x_details <-
+    helper_detail_parse(.x)
+
+  # If the field isn't correctly retrieved, try again with fresh download
+  if (is.na(x_details)) {
+    .x <- read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
+
+    x_details <- helper_detail_parse(.x)
+  }
+
+
+  ## Produce output tibble -----------------------------------------------------
 
   tibble(
     id =
@@ -169,21 +181,7 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
       html_node(xpath = '//*[@class = "address-3617944557"]') %>%
       html_text(),
     details =
-      if_else(
-        !is.na({
-          .x %>%
-            html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]'
-            ) %>%
-            html_text()}),
-        .x %>%
-          html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]') %>%
-          html_text() %>%
-          str_replace_all("\n", ""),
-        .x %>%
-          html_node(xpath =
-                      '//*[@class = "attributeListWrapper-2108313769"]') %>%
-          html_text()) %>%
-      str_replace_all("\n", ""),
+      x_details,
     text =
       .x %>%
       html_node(xpath =
@@ -219,7 +217,6 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
     select(.data$id:.data$location, .data$bedrooms:.data$furnished,
            .data$details:.data$photos)
 }
-
 
 
 #' Helper function to generate error Kijiji output
@@ -260,5 +257,53 @@ helper_error_result <- function(.y, city_name) {
     photos = vector("list", 1)
   )
 
+}
+
+
+#' Helper function to generate Kijiji detail field
+#'
+#' @param .x A single scraped Kijiji listing.
+#' @return A character scalar.
+#' @importFrom rvest html_node html_nodes html_text
+
+helper_detail_parse <- function(.x) {
+
+  x_details <-
+    .x %>%
+    html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]'
+    ) %>%
+    html_text() %>%
+    str_replace_all("\n", "")
+
+  if (is.na(x_details)) {
+    x_details <-
+      .x %>%
+      html_node(xpath =
+                  '//*[@class = "attributeListWrapper-2108313769"]') %>%
+      html_text() %>%
+      str_replace_all("\n", "")
+  }
+
+  if (is.na(x_details)) {
+    x_details <-
+      .x %>%
+      html_node(xpath = paste0('//*[@class = "itemAttributeCards-2416600896 ',
+                               'itemAttributeCards__fourCards-3070740560"]')
+      ) %>%
+      html_text() %>%
+      str_replace_all("\n", "")
+  }
+
+  if (is.na(x_details)) {
+    x_details <-
+      .x %>%
+      html_node(xpath = paste0('//*[@class = "itemAttributeCards-2416600896 ',
+                               'itemAttributeCards__twoCards-934340663"]')
+      ) %>%
+      html_text() %>%
+      str_replace_all("\n", "")
+  }
+
+  x_details
 }
 
