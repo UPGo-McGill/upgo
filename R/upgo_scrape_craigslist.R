@@ -36,11 +36,10 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
   .temp_url_list <- .temp_listings <- .temp_results <- .temp_finished_flag <-
     i <- NULL
 
-  url_end <- "&lang=en&cc=us"
-
   # Default to no progress bar
   opts <- list()
 
+  # But if !quiet, set up the options to use the progress bar
   if (!quiet) {
     pb_fun <- function(n) pb$tick()
     opts <- list(progress = pb_fun)
@@ -134,7 +133,8 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
     }
 
     if (length(invalid_cities) > 1) {
-      stop("Invalid inputs to `city` argument (", invalid_cities,
+      stop("Invalid inputs to `city` argument (",
+           do.call(paste, as.list(c(invalid_cities, sep = ", "))),
            "). Inputs must correspond to ***.craigslist.org subdomains.")
     }
   }
@@ -153,15 +153,8 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
     }
 
     url_list <- get(".temp_url_list", envir = .GlobalEnv)
-    on.exit(.temp_url_list <<- url_list, add = TRUE)
-
     listings <- get(".temp_listings", envir = .GlobalEnv)
-    on.exit(.temp_listings <<- listings, add = TRUE)
-
     results <- get(".temp_results", envir = .GlobalEnv)
-    on.exit(.temp_results <<- results, add = TRUE)
-
-    on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
 
   ## Initialize objects if recovery == FALSE -----------------------------------
@@ -169,18 +162,20 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
   } else {
 
     url_list <- vector("list", length(city))
-    on.exit(.temp_url_list <<- url_list, add = TRUE)
-
     listings <- vector("list", length(city))
-    on.exit(.temp_listings <<- listings, add = TRUE)
-
     results <- vector("list", length(city))
-    on.exit(.temp_results <<- results, add = TRUE)
-
     finished_flag <- map(seq_along(city), ~FALSE)
-    on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
   }
+
+  ## Set on.exit expression ----------------------------------------------------
+
+  on.exit({
+    .temp_url_list <<- url_list
+    .temp_listings <<- listings
+    .temp_finished_flag <<- finished_flag
+    .temp_results <<- results
+  })
 
 
   ## Initialize multicore processing and proxies -------------------------------
@@ -224,49 +219,12 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
       "Scraping Craigslist rental listings in {city_name}."))))
 
 
-    ## Construct listing page URL ----------------------------------------------
-
-    listings_url <-
-      paste0("https://", city_name, ".craigslist.org/search/apa?s=0", url_end)
-
-
-    ## Get URLs ----------------------------------------------------------------
+    ## Retrieve URLs -----------------------------------------------------------
 
     start_time <- Sys.time()
 
-    # Find number of pages to scrape
-    listings_to_scrape <-
-      listings_url %>%
-      read_html() %>%
-      html_node(".totalcount") %>%
-      html_text()
-
-    pages <- ceiling(as.numeric(listings_to_scrape) / 120)
-
-    # Prepare progress bar
-    if (!quiet) {
-      pb <- progress_bar$new(format = silver(italic(
-        "Scraping listing page :current of :total [:bar] :percent, ETA: :eta")),
-        total = pages, show_after = 0)
-
-      pb$tick(0)
-    }
-
-    # Scrape pages
     url_list[[n]] <-
-      foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
-
-        tryCatch({
-          suppressWarnings(
-            read_html(GET(paste0(
-              "https://", city_name, ".craigslist.org/search/apa?s=",
-              120 * (i - 1), url_end))) %>%
-              html_nodes(".result-row") %>%
-              str_extract('(?<=href=").*(?=" c)')
-          )}, error = function(e) NULL)
-        }
-
-    url_list[[n]] <- unique(unlist(url_list[[n]])) %>% str_extract('.*(?=\\?)')
+      helper_cl_urls(city_name, quiet)
 
     # Clean up
     total_time <- Sys.time() - start_time
@@ -274,8 +232,7 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
     time_final_2 <- attr(total_time, 'units')
 
     if (!quiet) {
-      message(silver(length(url_list[[n]]),
-                     "listing URLs scraped in "),
+      message(silver(length(url_list[[n]]), "listing URLs scraped in "),
               cyan(time_final_1, time_final_2), silver("."))
     }
 

@@ -1,3 +1,74 @@
+#' Helper function to scrape Craigslist listing URLs
+#'
+#' \code{helper_cl_urls} scrapes Craigslist listing URLs for a city.
+#'
+#' @param city_name A character scalar of the city to be scraped.
+#' @param quiet A logical vector. Should the function execute quietly, or should
+#' it return status updates throughout the function?
+#' @importFrom rvest html_attr
+#' @importFrom stats na.omit
+#' @importFrom xml2 xml_children
+#' @return A list of URLs.
+
+helper_cl_urls <- function(city_name, quiet) {
+
+  i <- NULL
+
+  # Default to no progress bar
+  opts <- list()
+
+  ## Construct listing page URL ----------------------------------------------
+
+  listings_url <-
+    paste0("https://", city_name,
+           ".craigslist.org/search/apa?s=0&lang=en&cc=us")
+
+
+  ## Get URLs ----------------------------------------------------------------
+
+  # Find number of pages to scrape
+  listings_to_scrape <-
+    listings_url %>%
+    read_html() %>%
+    html_node(".totalcount") %>%
+    html_text()
+
+  pages <- ceiling(as.numeric(listings_to_scrape) / 120)
+
+  # Prepare progress bar
+  if (!quiet) {
+    pb <- progress_bar$new(format = silver(italic(
+      "Scraping listing page :current of :total [:bar] :percent, ETA: :eta")),
+      total = pages, show_after = 0)
+
+    pb$tick(0)
+    pb_fun <- function(n) pb$tick()
+    opts <- list(progress = pb_fun)
+  }
+
+  # Scrape pages
+  url_list <-
+    foreach (i = seq_len(pages), .options.snow = opts,
+             .packages = c("dplyr", "httr", "rvest")) %dopar% {
+
+      tryCatch({
+        read_html(GET(paste0(
+          "https://", city_name, ".craigslist.org/search/apa?s=",
+          120 * (i - 1), "&lang=en&cc=us"))) %>%
+          html_nodes(".result-row") %>%
+          xml_children() %>%
+          html_attr("href") %>%
+          na.omit()
+        }, error = function(e) NULL)
+    }
+
+  url_list <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
+
+  return(url_list)
+
+}
+
+
 #' Helper function to download Craigslist or Kijiji listings
 #'
 #' \code{helper_download_listing} scrapes listings from a list of URLs.
