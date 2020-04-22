@@ -266,7 +266,7 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
           )}, error = function(e) NULL)
         }
 
-    url_list[[n]] <- unique(unlist(url_list[[n]]))
+    url_list[[n]] <- unique(unlist(url_list[[n]])) %>% str_extract('.*(?=\\?)')
 
     # Clean up
     total_time <- Sys.time() - start_time
@@ -312,7 +312,7 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
     listings[[n]] <-
       url_list[[n]] %>%
-      helper_download_listing(quiet = quiet)
+      helper_download_listing("", "?lang=en&cc=us", quiet = quiet)
 
     # Clean up
     total_time <- Sys.time() - start_time

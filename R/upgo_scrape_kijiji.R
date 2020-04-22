@@ -421,7 +421,6 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
 
     listings[[n]] <-
       url_list[[n]] %>%
-      str_extract('.*(?=\\?)') %>%
       helper_download_listing("", "?siteLocale=en_CA", quiet = quiet)
 
     # Clean up
