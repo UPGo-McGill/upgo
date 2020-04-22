@@ -14,7 +14,8 @@
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
-helper_download_listing <- function(url_list, url_prefix, url_suffix, quiet) {
+helper_download_listing <- function(url_list, url_prefix = "", url_suffix = "",
+                                    quiet) {
 
   i <- NULL
 
@@ -306,4 +307,117 @@ helper_detail_parse <- function(.x) {
 
   x_details
 }
+
+
+#' Helper function to parse scraped Craigslist listings
+#'
+#' \code{helper_parse_cl} parses a scraped Craiglist listing.
+#'
+#' @param .x A single scraped Craigslist listing, as retrieved with read_html.
+#' @param .y A single Craigslist URL.
+#' @param city_name A character scalar indicating the name of the city in which
+#' the listing is located.
+#' @return A one-row data frame.
+#' @importFrom dplyr %>% if_else mutate select tibble
+#' @importFrom purrr map_dfr
+#' @importFrom rvest html_node html_nodes html_text
+#' @importFrom readr parse_number
+#' @importFrom stringr str_detect str_replace_all
+
+
+helper_parse_cl <- function(.x, .y, city_name) {
+
+  tibble(
+    id = tryCatch({
+      .x %>%
+        html_node(xpath = '/html/body/section[@class="page-container"]') %>%
+        html_node(xpath = 'section[@class="body"]') %>%
+        html_node(xpath = 'section[@class="userbody"]') %>%
+        html_node(xpath = 'div[@class="postinginfos"]') %>%
+        html_node("p") %>%
+        html_text() %>%
+        str_extract('(?<=id: ).*')
+    }, error = function(e) NA_character_),
+    url =
+      .x %>%
+      html_node(xpath = '/html/head/link[@rel="canonical"]/@href') %>%
+      html_text(),
+    title =
+      .x %>%
+      html_node(xpath = '/html/head/title') %>%
+      html_text(),
+    created =
+      .x %>%
+      html_node(xpath = '//*[@id="display-date"]/time/@datetime') %>%
+      html_text(),
+    scraped =
+      Sys.Date(),
+    price =
+      tryCatch({
+        .x %>%
+          html_node(xpath = '/html/body') %>%
+          html_node(xpath = 'section[@class = "page-container"]') %>%
+          html_node(xpath = 'section[@class = "body"]') %>%
+          html_node(xpath = 'h2[@class = "postingtitle"]') %>%
+          html_node(xpath = 'span/span[@class = "price"]') %>%
+          html_text() %>%
+          readr::parse_number()
+      }, error = function(e) NA_real_),
+    city =
+      city_name,
+    location =
+      .x %>%
+      html_node(xpath = '/html/head') %>%
+      html_node(xpath = 'meta[@name = "geo.position"]/@content') %>%
+      html_text(),
+    bedrooms =
+      NA_character_,
+    bathrooms =
+      NA_character_,
+    furnished =
+      NA,
+    details =
+      tryCatch({
+        .x %>%
+          html_node(xpath = '/html/body/section[@class="page-container"]') %>%
+          html_node(xpath = 'section[@class="body"]') %>%
+          html_node(xpath = 'section[@class="userbody"]') %>%
+          html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
+          html_nodes(xpath = 'p') %>%
+          html_text() %>%
+          str_replace_all("\n", "") %>%
+          str_replace_all("  ", " ") %>%
+          str_replace_all("  ", " ") %>%
+          str_replace_all("  ", " ") %>%
+          str_replace_all("  ", " ") %>%
+          str_extract('(?<= ).*(?= )') %>%
+          paste(collapse = "; ")
+      }, error = function(e) NA_character_),
+    text =
+      tryCatch({
+        .x %>%
+          html_node(xpath = '/html/body/section[@class="page-container"]') %>%
+          html_node(xpath = 'section[@class= "body"]') %>%
+          html_node(xpath = 'section[@class= "userbody"]') %>%
+          html_node(xpath = 'section[@id = "postingbody"]') %>%
+          html_text() %>%
+          str_replace(
+            "\n            QR Code Link to This Post\n            \n        \n",
+            "") %>%
+          str_replace_all("\u2022\t", "") %>%
+          str_replace_all("\n", " ")
+      }, error = function(e) NA_character_),
+    photos =
+      list(.x %>%
+             html_nodes(xpath = '//*/img') %>%
+             html_node(xpath = '@src') %>%
+             html_text() %>%
+             # `[`(2:length(.)) %>%
+             str_replace("50x50c", "600x450") %>%
+             unique())
+  )
+
+}
+
+
 

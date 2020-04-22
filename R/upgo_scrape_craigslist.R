@@ -11,6 +11,10 @@
 #' be incorporated into the new results.
 #' @param recovery A logical vector. Should the function attempt to recover
 #' results from a previous, unsuccessful function call?
+#' @param proxies Character vector of IPs to use for proxy connections. If
+#' supplied, this must be at least as long as the number of cores.
+#' @param cores A positive integer scalar. How many processing cores should be
+#' used to scrape?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
@@ -23,15 +27,27 @@
 #' @export
 
 upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
-                                   quiet = FALSE) {
+                                 proxies = NULL, cores = 1L, quiet = FALSE) {
 
-  ### Setup ####################################################################
+  ### SETUP ####################################################################
+
+  ## Initialize variables ------------------------------------------------------
 
   .temp_url_list <- .temp_listings <- .temp_results <- .temp_finished_flag <-
-    NULL
+    i <- NULL
+
+  url_end <- "&lang=en&cc=us"
+
+  # Default to no progress bar
+  opts <- list()
+
+  if (!quiet) {
+    pb_fun <- function(n) pb$tick()
+    opts <- list(progress = pb_fun)
+  }
 
 
-  ### Validate city argument ###################################################
+  ## Validate city argument ----------------------------------------------------
 
   possible_cities <-
     c("abilene", "akroncanton", "albanyga", "albany", "albuquerque", "altoona",
@@ -104,10 +120,11 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
       "wausau", "wenatchee", "quincy", "westky", "westmd", "westernmass",
       "westslope", "wv", "wichitafalls", "wichita", "williamsport",
       "wilmington", "winchester", "winstonsalem", "worcester", "wyoming",
-      "yakima", "york", "youngstown", "yubasutter", "yuma", "zanesville"
+      "yakima", "york", "youngstown", "yubasutter", "yuma", "zanesville",
+      "toronto", "montreal", "vancouver"
       )
 
-if (!all(city %in% possible_cities)) {
+  if (!all(city %in% possible_cities)) {
 
     invalid_cities <- city[!city %in% possible_cities]
 
@@ -123,7 +140,7 @@ if (!all(city %in% possible_cities)) {
   }
 
 
-  ### Restore object if recovery == TRUE #######################################
+  ## Restore object if recovery == TRUE ----------------------------------------
 
   if (recovery) {
 
@@ -147,7 +164,7 @@ if (!all(city %in% possible_cities)) {
     on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
 
-  ### Initialize objects if recovery == FALSE ##################################
+  ## Initialize objects if recovery == FALSE -----------------------------------
 
   } else {
 
@@ -166,25 +183,36 @@ if (!all(city %in% possible_cities)) {
   }
 
 
-  ### Main scraping loop #######################################################
+  ## Initialize multicore processing and proxies -------------------------------
+
+  if (!quiet && cores > 1) message(silver(glue(
+    "Initializing {cores} processing threads.")))
+
+  `%dopar%` <- foreach::`%dopar%`
+
+  (cl <- cores %>% makeCluster()) %>% registerDoSNOW()
+
+  if (!missing(proxies)) {
+
+    proxy_reps <- ceiling(cores/length(proxies))
+    proxy_list <- rep(proxies, proxy_reps)[seq_len(cores)]
+
+    clusterApply(cl, proxy_list, function(x) {
+      set_config(use_proxy(str_extract(x, '(?<=server=).*')))
+    })
+  }
+
+
+  ### MAIN SCRAPING LOOP #######################################################
 
   for (n in seq_along(city)) {
 
-    ## Get city_name
+    ## Get city_name -----------------------------------------------------------
 
-    if (city[[n]] %in% c("montreal", "Montreal", "montr\u00e9al",
-                         "Montr\u00e9al")) {
-      city_name <- "Montreal"
-
-    } else if (city[[n]] %in% c("toronto", "Toronto")) {
-      city_name <- "Toronto"
-
-    } else if (city[[n]] %in% c("vancouver", "Vancouver")) {
-      city_name <- "Vancouver"
-    }
+    city_name <- city[[n]]
 
 
-    ## Skip city if it is already finished in recovery data
+    ## Skip city if already finished in recovery data --------------------------
 
     if (finished_flag[[n]]) {
       if (!quiet) message(silver(bold(glue(
@@ -193,188 +221,162 @@ if (!all(city %in% possible_cities)) {
     }
 
     if (!quiet) message(silver(bold(glue(
-      "Scraping Kijiji rental listings in {city_name}."))))
+      "Scraping Craigslist rental listings in {city_name}."))))
 
+
+    ## Construct listing page URL ----------------------------------------------
+
+    listings_url <-
+      paste0("https://", city_name, ".craigslist.org/search/apa?s=0", url_end)
+
+
+    ## Get URLs ----------------------------------------------------------------
+
+    start_time <- Sys.time()
+
+    # Find number of pages to scrape
+    listings_to_scrape <-
+      listings_url %>%
+      read_html() %>%
+      html_node(".totalcount") %>%
+      html_text()
+
+    pages <- ceiling(as.numeric(listings_to_scrape) / 120)
+
+    # Prepare progress bar
+    if (!quiet) {
+      pb <- progress_bar$new(format = silver(italic(
+        "Scraping listing page :current of :total [:bar] :percent, ETA: :eta")),
+        total = pages, show_after = 0)
+
+      pb$tick(0)
+    }
+
+    # Scrape pages
+    url_list[[n]] <-
+      foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
+
+        tryCatch({
+          suppressWarnings(
+            read_html(GET(paste0(
+              "https://", city_name, ".craigslist.org/search/apa?s=",
+              120 * (i - 1), url_end))) %>%
+              html_nodes(".result-row") %>%
+              str_extract('(?<=href=").*(?=" c)')
+          )}, error = function(e) NULL)
+        }
+
+    url_list[[n]] <- unique(unlist(url_list[[n]]))
+
+    # Clean up
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(length(url_list[[n]]),
+                     "listing URLs scraped in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
+
+
+    ## Process duplicate listings if old_results is provided -------------------
+
+    if (!missing(old_results)) {
+
+      updated_results <-
+        old_results %>%
+        filter(city == city_name,
+               url %in% url_list[[n]]) %>%
+        mutate(scraped = Sys.Date())
+
+      if (!quiet) message(silver(glue(
+        "{nrow(updated_results)} previously scraped listings still active.")))
+
+      old_results <-
+        old_results %>%
+        filter(city == city_name,
+               !url %in% url_list[[n]]) %>%
+        bind_rows(updated_results)
+
+      url_list[[n]] <-
+        url_list[[n]][!url_list[[n]] %in%
+                        old_results[old_results$city == city_name,]$url]
+
+    }
+
+
+    ## Scrape individual pages -------------------------------------------------
+
+    start_time <- Sys.time()
+
+    listings[[n]] <-
+      url_list[[n]] %>%
+      helper_download_listing(quiet = quiet)
+
+    # Clean up
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(length(listings[[n]]), "listings scraped in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
+
+
+    ## Parse HTML --------------------------------------------------------------
+
+    start_time <- Sys.time()
+
+    if (!quiet) {
+      pb <- progress_bar$new(format = silver(italic(
+        "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
+        total = length(listings[[n]]), show_after = 0)
+
+      pb$tick(0)
+    }
+
+    results[[n]] <-
+      map2_dfr(listings[[n]], url_list[[n]], ~{
+        if (!quiet) pb$tick()
+        helper_parse_cl(.x, .y, city_name)
+      })
+
+
+    ## Rbind with old_results if present, then arrange -------------------------
+
+    if (!missing(old_results)) {
+      results[[n]] <-
+        bind_rows(results[[n]], old_results)
+    }
+
+    results[[n]] <-
+      results[[n]] %>%
+      arrange(.data$id)
+
+
+    ## Set finished_flag upon successfully completing a city -------------------
+
+    finished_flag[[n]] <- TRUE
+
+
+    ## Clean up ----------------------------------------------------------------
+
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(nrow(results[[n]]), "listings parsed in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
   }
 
 
+  ### RBIND AND RETURN RESULTS #################################################
 
-
-
-
-
-
-
-
-  ### Find number of listings ##################################################
-
-  listings_page <-
-    read_html(paste0(
-      "https://",
-      city,
-      ".craigslist.org/d/apts-housing-for-rent/search/apa?lang=en&cc=us"))
-
-  listings_to_scrape <-
-    listings_page %>%
-    html_node(".totalcount") %>%
-    html_text()
-
-  pages <- ceiling(as.numeric(listings_to_scrape) / 120)
-
-
-  ### Scrape listing URLs ######################################################
-
-  # Initialize url list
-  url_list <- list()
-
-  on.exit(.temp_url_list <<- url_list)
-
-  for (i in seq_len(pages)) {
-
-    listings <-
-      read_html(paste0(
-        "https://",
-        city,
-        ".craigslist.org/search/apa?s=",
-        120 * (i - 1),
-        "&lang=en&cc=us"
-      ))
-
-    url_list[[i]] <-
-      suppressWarnings(
-        listings %>%
-          html_nodes(".result-row") %>%
-          str_extract('(?<=href=").*(?=" c)')
-      )
-
-    if (!quiet) message("Page ", i, " of ", pages, " scraped.")
-
-  }
-
-  url_list <- unique(unlist(url_list))
-
-
-  ### Remove duplicate listings if old_results is provided
-
-  if (!missing(old_results)) {
-
-    url_list <-
-      url_list[!str_replace(url_list,
-                            "\\?lang=en&amp;cc=us", "") %in% old_results$url]
-
-  }
-
-
-  ### Scrape individual pages ##################################################
-
-  listings <- list()
-
-  on.exit(.temp_listings <<- listings, add = TRUE)
-
-  for (i in seq_along(url_list)) {
-
-    listings[[i]] <-
-      tryCatch({
-        url_list[[i]] %>%
-          read_html(options = "HUGE")
-      }, error = function(e) NULL)
-
-    if (!quiet) message("Listing ", i, " of ", length(url_list), " scraped.")
-
-  }
-
-
-  ### Clean up #################################################################
-
-  listings <- listings[!map_lgl(listings, is.null)]
-
-
-  ### Parse HTML ###############################################################
-
-  results <-
-    listings %>%
-    map_dfr(~{
-      tibble(
-        id = tryCatch({
-          .x %>%
-            html_node(xpath = '/html/body/section[@class="page-container"]') %>%
-            html_node(xpath = 'section[@class="body"]') %>%
-            html_node(xpath = 'section[@class="userbody"]') %>%
-            html_node(xpath = 'div[@class="postinginfos"]') %>%
-            html_node("p") %>%
-            html_text() %>%
-            str_extract('(?<=id: ).*')
-        }, error = function(e) NA_character_),
-        url =
-          .x %>%
-          html_node(xpath = '/html/head/link[@rel="canonical"]/@href') %>%
-          html_text(),
-        title =
-          .x %>%
-          html_node(xpath = '/html/head/title') %>%
-          html_text(),
-        date =
-          .x %>%
-          html_node(xpath = '//*[@id="display-date"]/time/@datetime') %>%
-          html_text(),
-        price =
-          tryCatch({
-            .x %>%
-            html_node(xpath = '/html/body') %>%
-              html_node(xpath = 'section[@class = "page-container"]') %>%
-              html_node(xpath = 'section[@class = "body"]') %>%
-              html_node(xpath = 'h2[@class = "postingtitle"]') %>%
-              html_node(xpath = 'span/span[@class = "price"]') %>%
-              html_text() %>%
-              readr::parse_number()
-          }, error = function(e) NA_real_),
-        location =
-          .x %>%
-          html_node(xpath = '/html/head') %>%
-          html_node(xpath = 'meta[@name = "geo.position"]/@content') %>%
-          html_text(),
-        details =
-          tryCatch({
-            .x %>%
-              html_node(xpath = '/html/body/section[@class="page-container"]') %>%
-              html_node(xpath = 'section[@class="body"]') %>%
-              html_node(xpath = 'section[@class="userbody"]') %>%
-              html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
-              html_nodes(xpath = 'p') %>%
-              html_text() %>%
-              str_replace_all("\n", "") %>%
-              str_replace_all("  ", " ") %>%
-              str_replace_all("  ", " ") %>%
-              str_replace_all("  ", " ") %>%
-              str_replace_all("  ", " ") %>%
-              str_extract('(?<= ).*(?= )') %>%
-              paste(collapse = "; ")
-            }, error = function(e) NA_character_),
-        text =
-          tryCatch({
-            .x %>%
-              html_node(xpath = '/html/body/section[@class="page-container"]'
-                        ) %>%
-              html_node(xpath = 'section[@class= "body"]') %>%
-              html_node(xpath = 'section[@class= "userbody"]') %>%
-              html_node(xpath = 'section[@id = "postingbody"]') %>%
-              html_text() %>%
-              str_replace(
-                "\n            QR Code Link to This Post\n            \n        \n", ""
-                ) %>%
-              str_replace_all("\u2022\t", "") %>%
-              str_replace_all("\n", " ")
-          }, error = function(e) NA_character_),
-        photos =
-          list(.x %>%
-          html_nodes(xpath = '//*/img') %>%
-          html_node(xpath = '@src') %>%
-          html_text() %>%
-          # `[`(2:length(.)) %>%
-          str_replace("50x50c", "600x450") %>%
-          unique())
-        )
-    })
+  results <- bind_rows(results)
 
   on.exit()
 

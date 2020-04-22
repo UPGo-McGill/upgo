@@ -4,7 +4,7 @@
 \alias{helper_download_listing}
 \title{Helper function to download Craigslist or Kijiji listings}
 \usage{
-helper_download_listing(url_list, url_prefix, url_suffix, quiet)
+helper_download_listing(url_list, url_prefix = "", url_suffix = "", quiet)
 }
 \arguments{
 \item{url_list}{A character vector of URLs to be scraped.}
