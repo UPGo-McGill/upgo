@@ -3,30 +3,25 @@
 #' \code{helper_cl_urls} scrapes Craigslist listing URLs for a city.
 #'
 #' @param city_name A character scalar of the city to be scraped.
-#' @param quiet A logical vector. Should the function execute quietly, or should
-#' it return status updates throughout the function?
+#' @importFrom progressr handlers handler_progress progressor
 #' @importFrom rvest html_attr
 #' @importFrom stats na.omit
 #' @importFrom xml2 xml_children
 #' @return A list of URLs.
 
-helper_cl_urls <- function(city_name, quiet) {
+helper_cl_urls <- function(city_name) {
 
   i <- NULL
 
-  # Default to no progress bar
-  opts <- list()
-
-  ## Construct listing page URL ----------------------------------------------
+  ## Construct listing page URL ------------------------------------------------
 
   listings_url <-
     paste0("https://", city_name,
            ".craigslist.org/search/apa?s=0&lang=en&cc=us")
 
 
-  ## Get URLs ----------------------------------------------------------------
+  ## Find number of pages to scrape --------------------------------------------
 
-  # Find number of pages to scrape
   listings_to_scrape <-
     listings_url %>%
     read_html() %>%
@@ -35,23 +30,17 @@ helper_cl_urls <- function(city_name, quiet) {
 
   pages <- ceiling(as.numeric(listings_to_scrape) / 120)
 
-  # Prepare progress bar
-  if (!quiet) {
-    pb <- progress_bar$new(format = silver(italic(
-      "Scraping listing page :current of :total [:bar] :percent, ETA: :eta")),
-      total = pages, show_after = 0)
 
-    pb$tick(0)
-    pb_fun <- function(n) pb$tick()
-    opts <- list(progress = pb_fun)
-  }
+  ## Prepare progress reporting ------------------------------------------------
 
-  # Scrape pages
+  upgo_env$pb <- progressor(steps = pages)
+
+
+  ## Scrape pages --------------------------------------------------------------
+
   url_list <-
-    foreach (i = seq_len(pages), .options.snow = opts,
-             .packages = c("dplyr", "httr", "rvest")) %dopar% {
-
-      tryCatch({
+    eval(
+      helper_do_parallel(seq_len(pages), {
         read_html(GET(paste0(
           "https://", city_name, ".craigslist.org/search/apa?s=",
           120 * (i - 1), "&lang=en&cc=us"))) %>%
@@ -59,8 +48,11 @@ helper_cl_urls <- function(city_name, quiet) {
           xml_children() %>%
           html_attr("href") %>%
           na.omit()
-        }, error = function(e) NULL)
-    }
+      })
+    )
+
+
+  ## Merge and clean up list ---------------------------------------------------
 
   url_list <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
 
@@ -74,10 +66,6 @@ helper_cl_urls <- function(city_name, quiet) {
 #' \code{helper_download_listing} scrapes listings from a list of URLs.
 #'
 #' @param url_list A character vector of URLs to be scraped.
-#' @param url_prefix A character scalar to be prepended to each URL.
-#' @param url_suffix A character scalar to be appended to each URL.
-#' @param quiet A logical vector. Should the function execute quietly, or should
-#' it return status updates throughout the function?
 #' @return A list of HTML objects.
 #' @importFrom dplyr %>% if_else mutate select tibble
 #' @importFrom purrr map_dfr
@@ -85,52 +73,43 @@ helper_cl_urls <- function(city_name, quiet) {
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
-helper_download_listing <- function(url_list, url_prefix = "", url_suffix = "",
-                                    quiet) {
+helper_download_listing <- function(url_list) {
 
   i <- NULL
 
-  # Default to no progress bar
-  opts <- list()
 
-  if (!quiet) {
-    pb <- progress_bar$new(
-      format = silver(italic(
-        "Scraping listing :current of :total [:bar] :percent, ETA: :eta")),
-      total = length(url_list),
-      show_after = 0
-    )
+  ## Prepare progress reporting ------------------------------------------------
 
-    pb$tick(0)
-    pb_fun <- function(n) pb$tick()
-    opts <- list(progress = pb_fun)
-  }
+  upgo_env$pb <- progressor(along = url_list)
 
-  # Create temp directory to store html output
+
+  ## Create temp directory to store html output --------------------------------
+
   dir_name <- paste0("temp_", sample(1E8, 1))
   dir.create(dir_name)
 
-  # Scrape listings then write to temp directory
-  foreach (i = seq_along(url_list), .options.snow = opts) %dopar% {
 
-    listing <-
-      tryCatch({
-        read_html(GET(paste0(url_prefix, url_list[[i]], url_suffix),
-                      options = "HUGE"))
-      }, error = function(e) NULL)
+  ## Scrape listings then write to temp directory ------------------------------
 
-    tryCatch({
-      write_html(listing, paste0(dir_name, "/temp_", i, ".html"))
-    }, error = function(e) NULL)
+  eval(
+    helper_do_parallel(seq_along(url_list), {
+      listing <-
+        tryCatch(
+          # Use aggressive timeout to switch to non-proxy download on failure
+          read_html(GET(url_list[[i]], httr::timeout(1)), options = "HUGE"),
+          error = function(e) {
+            httr::reset_config()
+            read_html(GET(url_list[[i]]), options = "HUGE")
+          })
+       write_html(listing, paste0(dir_name, "/temp_", i, ".html"))
+      })
+    )
 
-  }
+  ## Reconstitute listings and delete temp files -------------------------------
 
-  # Reconstitute listings
   listings <-
     map(seq_along(url_list), ~{
-      tryCatch({
-        read_html(paste0(dir_name, "/temp_", .x, ".html"))
-      }, error = function(e) NULL)
+      read_html(paste0(dir_name, "/temp_", .x, ".html"))
     })
 
   # Delete temp files
@@ -141,7 +120,7 @@ helper_download_listing <- function(url_list, url_prefix = "", url_suffix = "",
     listings[length(url_list)] <- list(NULL)
   }
 
-  listings
+  return(listings)
 
 }
 
@@ -252,6 +231,14 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
       .x %>%
       html_node(xpath = '//*[@class = "address-3617944557"]') %>%
       html_text(),
+    bedrooms =
+      x_details %>%
+      str_extract('(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
+    bathrooms =
+      x_details %>%
+      str_extract('(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
+    furnished =
+      x_details %>% str_extract('(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)'),
     details =
       x_details,
     text =
@@ -268,26 +255,9 @@ helper_parse_kijiji <- function(.x, .y, city_name) {
         ) %>%
         str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
-    mutate(
-      bedrooms =
-        str_extract(.data$details,
-                    '(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
-      bathrooms =
-        str_extract(.data$details,
-                    '(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
-      furnished =
-        str_extract(.data$details,
-                    '(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)')
-    ) %>%
-    mutate(
-      furnished = case_when(
-        .data$furnished %in% c("Oui", "Yes") ~ TRUE,
-        .data$furnished %in% c("Non", "No") ~ FALSE,
-        is.na(.data$furnished) ~ NA
-      )
-    ) %>%
-    select(.data$id:.data$location, .data$bedrooms:.data$furnished,
-           .data$details:.data$photos)
+    mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
+                                 .data$furnished %in% c("Non", "No") ~ FALSE,
+                                 is.na(.data$furnished) ~ NA))
 }
 
 
@@ -394,7 +364,6 @@ helper_detail_parse <- function(.x) {
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect str_replace_all
-
 
 helper_parse_cl <- function(.x, .y, city_name) {
 

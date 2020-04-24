@@ -73,7 +73,9 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
     })
   } else {
 
-    proxies <- proxies[1:cores]
+    proxy_reps <- ceiling(cores/length(proxies))
+    proxies <- rep(proxies, proxy_reps)[seq_len(cores)]
+    proxies <- paste0("--proxy-server=", proxies)
 
     if (!quiet) {
       message(silver(glue("Scraping with {cores} proxies.")))

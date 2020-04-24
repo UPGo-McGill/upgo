@@ -11,15 +11,14 @@
 #' be incorporated into the new results.
 #' @param recovery A logical vector. Should the function attempt to recover
 #' results from a previous, unsuccessful function call?
-#' @param proxies Character vector of IPs to use for proxy connections. If
-#' supplied, this must be at least as long as the number of cores.
-#' @param cores A positive integer scalar. How many processing cores should be
-#' used to scrape?
+#' @param proxies Character vector of IPs to use for proxy connections.
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
 #' @importFrom crayon cyan italic silver
 #' @importFrom dplyr %>%
+#' @importFrom future nbrOfWorkers
+#' @importFrom progressr progressor with_progress
 #' @importFrom purrr map_dfr
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom stringr str_extract
@@ -27,23 +26,21 @@
 #' @export
 
 upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
-                                 proxies = NULL, cores = 1L, quiet = FALSE) {
+                                 proxies = NULL, quiet = FALSE) {
 
   ### SETUP ####################################################################
 
   ## Initialize variables ------------------------------------------------------
 
+  # Quiet R CMD check
   .temp_url_list <- .temp_listings <- .temp_results <- .temp_finished_flag <-
     i <- NULL
 
-  # Default to no progress bar
-  opts <- list()
+  # Prepare for parallel processing
+  doFuture::registerDoFuture()
 
-  # But if !quiet, set up the options to use the progress bar
-  if (!quiet) {
-    pb_fun <- function(n) pb$tick()
-    opts <- list(progress = pb_fun)
-  }
+  # Put null progress bar in upgo_env
+  upgo_env$pb <-progressor(0)
 
 
   ## Validate city argument ----------------------------------------------------
@@ -178,23 +175,15 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
   })
 
 
-  ## Initialize multicore processing and proxies -------------------------------
-
-  if (!quiet && cores > 1) message(silver(glue(
-    "Initializing {cores} processing threads.")))
-
-  `%dopar%` <- foreach::`%dopar%`
-
-  (cl <- cores %>% makeCluster()) %>% registerDoSNOW()
+  ## Initialize proxies --------------------------------------------------------
 
   if (!missing(proxies)) {
 
-    proxy_reps <- ceiling(cores/length(proxies))
-    proxy_list <- rep(proxies, proxy_reps)[seq_len(cores)]
+    # Put proxy list in upgo_env so it can be accessed from child functions
+    upgo_env$proxy_list <- proxies
 
-    clusterApply(cl, proxy_list, function(x) {
-      set_config(use_proxy(str_extract(x, '(?<=server=).*')))
-    })
+    on.exit(rlang::env_unbind(upgo_env, "proxy_list"), add = TRUE)
+
   }
 
 
@@ -216,15 +205,21 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
     }
 
     if (!quiet) message(silver(bold(glue(
-      "Scraping Craigslist rental listings in {city_name}."))))
+      "Scraping Craigslist rental listings in '{city_name}' ",
+      "with {helper_plan()}."))))
 
 
     ## Retrieve URLs -----------------------------------------------------------
 
     start_time <- Sys.time()
 
-    url_list[[n]] <-
-      helper_cl_urls(city_name, quiet)
+    handler_upgo("Scraping page")
+
+    if (!quiet) {
+      with_progress(url_list[[n]] <- helper_cl_urls(city_name))
+    } else {
+      url_list[[n]] <- helper_cl_urls(city_name)
+    }
 
     # Clean up
     total_time <- Sys.time() - start_time
@@ -267,9 +262,20 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
     start_time <- Sys.time()
 
-    listings[[n]] <-
-      url_list[[n]] %>%
-      helper_download_listing("", "?lang=en&cc=us", quiet = quiet)
+    handler_upgo("Scraping listing")
+
+    if (!quiet) {
+      with_progress(
+        listings[[n]] <-
+          paste0(url_list[[n]], "?lang=en&cc=us") %>%
+          helper_download_listing()
+      )
+
+    } else {
+      listings[[n]] <-
+        paste0(url_list[[n]], "?lang=en&cc=us") %>%
+        helper_download_listing()
+    }
 
     # Clean up
     total_time <- Sys.time() - start_time
@@ -284,21 +290,32 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
     ## Parse HTML --------------------------------------------------------------
 
+    handler_upgo("Parsing result")
+
     start_time <- Sys.time()
 
-    if (!quiet) {
-      pb <- progress_bar$new(format = silver(italic(
-        "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
-        total = length(listings[[n]]), show_after = 0)
+    with_progress({
+      upgo_env$pb <- progressor(along = listings[[n]])
 
-      pb$tick(0)
-    }
-
-    results[[n]] <-
-      map2_dfr(listings[[n]], url_list[[n]], ~{
-        if (!quiet) pb$tick()
-        helper_parse_cl(.x, .y, city_name)
+      results[[n]] <-
+        furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
+          upgo_env$pb()
+          helper_parse_cl(.x, .y, city_name)
+          }
+        )
       })
+
+
+    ## Clean up ----------------------------------------------------------------
+
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(nrow(results[[n]]), "listings parsed in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
 
 
     ## Rbind with old_results if present, then arrange -------------------------
@@ -317,17 +334,6 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
     finished_flag[[n]] <- TRUE
 
-
-    ## Clean up ----------------------------------------------------------------
-
-    total_time <- Sys.time() - start_time
-    time_final_1 <- substr(total_time, 1, 4)
-    time_final_2 <- attr(total_time, 'units')
-
-    if (!quiet) {
-      message(silver(nrow(results[[n]]), "listings parsed in "),
-              cyan(time_final_1, time_final_2), silver("."))
-    }
   }
 
 
@@ -335,9 +341,11 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
   results <- bind_rows(results)
 
-  on.exit()
+  if (!missing(proxies)) {
+    on.exit(rlang::env_unbind(upgo_env, "proxy_list"))
+  } else on.exit()
 
-  results
+  return(results)
 
 }
 

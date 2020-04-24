@@ -420,8 +420,8 @@ upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
     start_time <- Sys.time()
 
     listings[[n]] <-
-      url_list[[n]] %>%
-      helper_download_listing("", "?siteLocale=en_CA", quiet = quiet)
+      paste0(url_list[[n]], "?siteLocale=en_CA") %>%
+      helper_download_listing()
 
     # Clean up
     total_time <- Sys.time() - start_time

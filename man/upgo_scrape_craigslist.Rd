@@ -9,7 +9,6 @@ upgo_scrape_craigslist(
   old_results = NULL,
   recovery = FALSE,
   proxies = NULL,
-  cores = 1L,
   quiet = FALSE
 )
 }
@@ -25,11 +24,7 @@ be incorporated into the new results.}
 \item{recovery}{A logical vector. Should the function attempt to recover
 results from a previous, unsuccessful function call?}
 
-\item{proxies}{Character vector of IPs to use for proxy connections. If
-supplied, this must be at least as long as the number of cores.}
-
-\item{cores}{A positive integer scalar. How many processing cores should be
-used to scrape?}
+\item{proxies}{Character vector of IPs to use for proxy connections.}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
