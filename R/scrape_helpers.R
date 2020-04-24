@@ -109,7 +109,7 @@ helper_download_listing <- function(url_list) {
 
   listings <-
     map(seq_along(url_list), ~{
-      read_html(paste0(dir_name, "/temp_", .x, ".html"))
+      read_html(paste0(dir_name, "/temp_", .x, ".html"), options = "HUGE")
     })
 
   # Delete temp files
