@@ -34,13 +34,20 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
   # Quiet R CMD check
   .temp_url_list <- .temp_listings <- .temp_results <- .temp_finished_flag <-
-    i <- NULL
+    NULL
 
   # Prepare for parallel processing
   doFuture::registerDoFuture()
 
-  # Put null progress bar in upgo_env
-  upgo_env$pb <-progressor(0)
+  # Put null progress bar in .upgo_env
+  .upgo_env$pb <-progressor(0)
+
+
+  ## Define environments for helper functions ----------------------------------
+
+  environment(`%do_upgo%`) <- environment()
+  environment(helper_cl_urls) <- environment()
+  # environment(helper_download_listing) <- environment()
 
 
   ## Validate city argument ----------------------------------------------------
@@ -179,10 +186,10 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
   if (!missing(proxies)) {
 
-    # Put proxy list in upgo_env so it can be accessed from child functions
-    upgo_env$proxy_list <- proxies
+    # Put proxy list in .upgo_env so it can be accessed from child functions
+    .upgo_env$proxy_list <- proxies
 
-    on.exit(rlang::env_unbind(upgo_env, "proxy_list"), add = TRUE)
+    on.exit(rlang::env_unbind(.upgo_env, "proxy_list"), add = TRUE)
 
   }
 
@@ -295,11 +302,11 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
     start_time <- Sys.time()
 
     with_progress({
-      upgo_env$pb <- progressor(along = listings[[n]])
+      .upgo_env$pb <- progressor(along = listings[[n]])
 
       results[[n]] <-
         furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
-          upgo_env$pb()
+          .upgo_env$pb()
           helper_parse_cl(.x, .y, city_name)
           }
         )
@@ -342,7 +349,7 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
   results <- bind_rows(results)
 
   if (!missing(proxies)) {
-    on.exit(rlang::env_unbind(upgo_env, "proxy_list"))
+    on.exit(rlang::env_unbind(.upgo_env, "proxy_list"))
   } else on.exit()
 
   return(results)

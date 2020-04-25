@@ -1,14 +1,6 @@
 #' UPGo package environment
 
-upgo_env <- rlang::env()
-
-
-#' Aliases to foreach functions
-#' @param obj The `foreach` statement.
-#' @param ex The expression to be iterated.
-
-upgo_do <- foreach::`%do%`
-upgo_dopar <- foreach::`%dopar%`
+.upgo_env <- rlang::env()
 
 
 #' Helper function to characterize future plan
@@ -54,13 +46,13 @@ helper_do_parallel <- function(iterator, statement) {
 
   first_part <- call("foreach", i = iterator)
 
-  if (rlang::env_has(upgo_env, "proxy_list")) {
+  if (rlang::env_has(.upgo_env, "proxy_list")) {
 
     second_part <-
       substitute({
         httr::set_config(httr::use_proxy(
-          upgo_env$proxy_list[[(i %% length(upgo_env$proxy_list)) + 1]]))
-        upgo_env$pb()
+          .upgo_env$proxy_list[[(i %% length(.upgo_env$proxy_list)) + 1]]))
+        .upgo_env$pb()
         statement
         })
 
@@ -68,7 +60,7 @@ helper_do_parallel <- function(iterator, statement) {
 
     second_part <-
       substitute({
-        upgo_env$pb()
+        .upgo_env$pb()
         statement
         })
 
@@ -97,3 +89,84 @@ handler_upgo <- function(message) {
       show_after = 0
     ))
 }
+
+
+#' Helper function to check current IP address
+#'
+#' \code{check_ip} queries whatismyipaddress.com to determine the current IP
+#' address.
+#'
+#' @return A character string with the current IP address.
+#' @export
+
+check_ip <- function() {
+
+  xml2::read_html(httr::GET("https://whatismyipaddress.com")) %>%
+    rvest::html_node(xpath = '//*[@id = "ipv4"]') %>%
+    rvest::html_text()
+
+}
+
+
+#' Helper function to execute parallel network code with proxies
+#'
+#' The function executes network code in a parallel future
+#' with proxies
+#'
+#' @param obj The sequence to iterate over
+#' @param ex An expression to evaluate in parallel
+#' @return A list of evaluated expressions.
+#' @export
+
+`%do_upgo%` <- function(obj, ex) {
+
+  # If .upgo_env isn't found, behave like standard foreach %dopar%
+  if (!exists(".upgo_env")) return(foreach::`%dopar%`(obj, ex))
+
+  if (rlang::env_has(.upgo_env, "proxy_list")) {
+
+    if (rlang::env_has(.upgo_env, "pb")) {
+
+      second_part <-
+        substitute({
+          httr::set_config(httr::use_proxy(
+            .upgo_env$proxy_list[[(i %% length(.upgo_env$proxy_list)) + 1]]))
+          .upgo_env$pb()
+          ex
+        })
+
+    } else {
+
+      second_part <-
+        substitute({
+          httr::set_config(httr::use_proxy(
+            .upgo_env$proxy_list[[(i %% length(.upgo_env$proxy_list)) + 1]]))
+          ex
+        })
+    }
+
+  } else {
+
+    if (rlang::env_has(.upgo_env, "pb")) {
+
+      second_part <-
+        substitute({
+          .upgo_env$pb()
+          ex
+        })
+
+    } else {
+
+      second_part <- ex
+
+    }
+  }
+
+  foreach::`%dopar%`(
+    obj,
+    eval(second_part)
+  )
+
+}
+
+

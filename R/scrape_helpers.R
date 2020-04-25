@@ -11,8 +11,6 @@
 
 helper_cl_urls <- function(city_name) {
 
-  i <- NULL
-
   ## Construct listing page URL ------------------------------------------------
 
   listings_url <-
@@ -24,32 +22,30 @@ helper_cl_urls <- function(city_name) {
 
   listings_to_scrape <-
     listings_url %>%
-    read_html() %>%
-    html_node(".totalcount") %>%
-    html_text()
+    xml2::read_html() %>%
+    rvest::html_node(".totalcount") %>%
+    rvest::html_text()
 
   pages <- ceiling(as.numeric(listings_to_scrape) / 120)
 
 
   ## Prepare progress reporting ------------------------------------------------
 
-  upgo_env$pb <- progressor(steps = pages)
+  .upgo_env$pb <- progressor(steps = pages)
 
 
   ## Scrape pages --------------------------------------------------------------
 
   url_list <-
-    eval(
-      helper_do_parallel(seq_len(pages), {
-        read_html(GET(paste0(
-          "https://", city_name, ".craigslist.org/search/apa?s=",
-          120 * (i - 1), "&lang=en&cc=us"))) %>%
-          html_nodes(".result-row") %>%
-          xml_children() %>%
-          html_attr("href") %>%
-          na.omit()
-      })
-    )
+    foreach(i = seq_len(pages)) %do_upgo% {
+      read_html(GET(paste0(
+        "https://", city_name, ".craigslist.org/search/apa?s=",
+        120 * (i - 1), "&lang=en&cc=us"))) %>%
+        html_nodes(".result-row") %>%
+        xml_children() %>%
+        html_attr("href") %>%
+        na.omit()
+    }
 
 
   ## Merge and clean up list ---------------------------------------------------
@@ -68,6 +64,7 @@ helper_cl_urls <- function(city_name) {
 #' @param url_list A character vector of URLs to be scraped.
 #' @return A list of HTML objects.
 #' @importFrom dplyr %>% if_else mutate select tibble
+#' @importFrom foreach foreach
 #' @importFrom purrr map_dfr
 #' @importFrom rvest html_node html_nodes html_text
 #' @importFrom readr parse_number
@@ -75,45 +72,28 @@ helper_cl_urls <- function(city_name) {
 
 helper_download_listing <- function(url_list) {
 
-  i <- NULL
-
-
   ## Prepare progress reporting ------------------------------------------------
 
-  upgo_env$pb <- progressor(along = url_list)
-
-
-  ## Create temp directory to store html output --------------------------------
-
-  dir_name <- paste0("temp_", sample(1E8, 1))
-  dir.create(dir_name)
+  .upgo_env$pb <- progressor(along = url_list)
 
 
   ## Scrape listings then write to temp directory ------------------------------
 
-  eval(
-    helper_do_parallel(seq_along(url_list), {
-      listing <-
-        tryCatch(
-          # Use aggressive timeout to switch to non-proxy download on failure
-          read_html(GET(url_list[[i]], httr::timeout(1)), options = "HUGE"),
-          error = function(e) {
-            httr::reset_config()
-            read_html(GET(url_list[[i]]), options = "HUGE")
-          })
-       write_html(listing, paste0(dir_name, "/temp_", i, ".html"))
-      })
-    )
+  listings <-
+    foreach(i = seq_along(url_list)) %do_upgo% {
+      tryCatch({
+        httr::GET(url_list[[i]], httr::timeout(1))
+      },
+               error = function(e) {
+                 httr::reset_config()
+                 httr::GET(url_list[[i]], httr::timeout(1))
+               })
+  }
+
 
   ## Reconstitute listings and delete temp files -------------------------------
 
-  listings <-
-    map(seq_along(url_list), ~{
-      read_html(paste0(dir_name, "/temp_", .x, ".html"), options = "HUGE")
-    })
-
-  # Delete temp files
-  unlink(dir_name, recursive = TRUE)
+  listings <- purrr::map(listings, read_html, options = "HUGE")
 
   # Make sure that listings[[n]] is the right length if last element is NULL
   if (length(listings) != length(url_list)) {
