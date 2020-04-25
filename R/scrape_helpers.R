@@ -2,7 +2,7 @@
 #'
 #' \code{helper_cl_urls} scrapes Craigslist listing URLs for a city.
 #'
-#' @param city_name A character scalar of the city to be scraped.
+#' @param city_name A character string: the city to be scraped.
 #' @importFrom progressr handlers handler_progress progressor
 #' @importFrom rvest html_attr
 #' @importFrom stats na.omit
@@ -10,6 +10,11 @@
 #' @return A list of URLs.
 
 helper_cl_urls <- function(city_name) {
+
+  ## Define environment for %do_upgo% function ---------------------------------
+
+  environment(`%do_upgo%`) <- environment()
+
 
   ## Construct listing page URL ------------------------------------------------
 
@@ -38,12 +43,12 @@ helper_cl_urls <- function(city_name) {
 
   url_list <-
     foreach(i = seq_len(pages)) %do_upgo% {
-      read_html(GET(paste0(
+      xml2::read_html(httr::GET(paste0(
         "https://", city_name, ".craigslist.org/search/apa?s=",
         120 * (i - 1), "&lang=en&cc=us"))) %>%
-        html_nodes(".result-row") %>%
-        xml_children() %>%
-        html_attr("href") %>%
+        rvest::html_nodes(".result-row") %>%
+        xml2::xml_children() %>%
+        rvest::html_attr("href") %>%
         na.omit()
     }
 
@@ -61,7 +66,7 @@ helper_cl_urls <- function(city_name) {
 #'
 #' \code{helper_download_listing} scrapes listings from a list of URLs.
 #'
-#' @param url_list A character vector of URLs to be scraped.
+#' @param urls A character vector of URLs to be scraped.
 #' @return A list of HTML objects.
 #' @importFrom dplyr %>% if_else mutate select tibble
 #' @importFrom foreach foreach
@@ -70,23 +75,28 @@ helper_cl_urls <- function(city_name) {
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
-helper_download_listing <- function(url_list) {
+helper_download_listing <- function(urls) {
+
+  ## Define environment for %do_upgo% function ---------------------------------
+
+  environment(`%do_upgo%`) <- environment()
+
 
   ## Prepare progress reporting ------------------------------------------------
 
-  .upgo_env$pb <- progressor(along = url_list)
+  .upgo_env$pb <- progressor(along = urls)
 
 
   ## Scrape listings then write to temp directory ------------------------------
 
   listings <-
-    foreach(i = seq_along(url_list)) %do_upgo% {
+    foreach(i = seq_along(urls)) %do_upgo% {
       tryCatch({
-        httr::GET(url_list[[i]], httr::timeout(1))
+        httr::GET(urls[[i]], httr::timeout(1))
       },
                error = function(e) {
                  httr::reset_config()
-                 httr::GET(url_list[[i]], httr::timeout(1))
+                 httr::GET(urls[[i]], httr::timeout(1))
                })
   }
 
@@ -96,8 +106,8 @@ helper_download_listing <- function(url_list) {
   listings <- purrr::map(listings, read_html, options = "HUGE")
 
   # Make sure that listings[[n]] is the right length if last element is NULL
-  if (length(listings) != length(url_list)) {
-    listings[length(url_list)] <- list(NULL)
+  if (length(listings) != length(urls)) {
+    listings[length(urls)] <- list(NULL)
   }
 
   return(listings)

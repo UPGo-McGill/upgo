@@ -7,7 +7,7 @@
 helper_cl_urls(city_name)
 }
 \arguments{
-\item{city_name}{A character scalar of the city to be scraped.}
+\item{city_name}{A character string: the city to be scraped.}
 }
 \value{
 A list of URLs.

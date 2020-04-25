@@ -43,13 +43,6 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
   .upgo_env$pb <-progressor(0)
 
 
-  ## Define environments for helper functions ----------------------------------
-
-  environment(`%do_upgo%`) <- environment()
-  environment(helper_cl_urls) <- environment()
-  # environment(helper_download_listing) <- environment()
-
-
   ## Validate city argument ----------------------------------------------------
 
   possible_cities <-
