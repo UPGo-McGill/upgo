@@ -1,12 +1,12 @@
 #' Function to scrape Kijiji listings
 #'
-#' \code{upgo_scrape_kijiji} scrapes all data from Kijiji rental listings in
+#' \code{upgo_scrape_kj} scrapes all data from Kijiji rental listings in
 #' Montreal, Toronto or Vancouver.
 #'
 #' @param city A character vector indicating the city or cities to scrape.
 #' Currently accepts "montreal", "toronto" or "vancouver" as inputs.
 #' @param old_results A data frame. If the output of a previous run of
-#' \code{upgo_scrape_kijiji} is supplied, listings previously scraped will be
+#' \code{upgo_scrape_kj} is supplied, listings previously scraped will be
 #' incorporated into the new results.
 #' @param short_long A character scalar. Should short-term rentals ("short"),
 #' long-term rentals ("long") or both ("both", the default) be scraped?
@@ -31,7 +31,7 @@
 #' @importFrom xml2 read_html write_html
 #' @export
 
-upgo_scrape_kijiji <- function(city, old_results = NULL, short_long = "both",
+upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
                                recovery = FALSE, proxies = NULL, cores = 1L,
                                quiet = FALSE) {
 

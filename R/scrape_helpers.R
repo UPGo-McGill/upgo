@@ -117,7 +117,7 @@ helper_download_listing <- function(urls) {
 
 #' Helper function to parse scraped Kijiji listings
 #'
-#' \code{helper_parse_kijiji} parses a scraped Kijiji listing.
+#' \code{helper_parse_kj} parses a scraped Kijiji listing.
 #'
 #' @param .x A single scraped Kijiji listing, as retrieved with read_html.
 #' @param .y A single Kijiji URL.
@@ -130,7 +130,7 @@ helper_download_listing <- function(urls) {
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect str_replace_all
 
-helper_parse_kijiji <- function(.x, .y, city_name) {
+helper_parse_kj <- function(.x, .y, city_name) {
 
   ### Test if the input is valid, and redownload if not ########################
 

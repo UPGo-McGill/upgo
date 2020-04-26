@@ -1,13 +1,13 @@
 #' Function to scrape Craigslist listings
 #'
-#' \code{upgo_scrape_craigslist} scrapes all data from Craigslist rental
+#' \code{upgo_scrape_cl} scrapes all data from Craigslist rental
 #' listings in a given city.
 #'
 #' @param city A character scalar indicating the city to scrape. It must
 #' correspond to the domain prefix used for a city's Craigslist site (e.g.
 #' "sfbay" for the San Francisco Bay area).
 #' @param old_results A data frame. If the output of a previous run of
-#' \code{upgo_scrape_craigslist} is supplied, listings previously scraped will
+#' \code{upgo_scrape_cl} is supplied, listings previously scraped will
 #' be incorporated into the new results.
 #' @param recovery A logical vector. Should the function attempt to recover
 #' results from a previous, unsuccessful function call?
@@ -25,7 +25,7 @@
 #' @importFrom xml2 read_html
 #' @export
 
-upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
+upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
                                  proxies = NULL, quiet = FALSE) {
 
   ### SETUP ####################################################################
