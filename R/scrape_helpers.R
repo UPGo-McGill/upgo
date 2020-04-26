@@ -297,7 +297,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   fail <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
 
-  if (fail) return(helper_error_result(.y, city_name))
+  if (fail) return(helper_error_kj(.y, city_name))
 
 
   ### Check for 404 redirects and expired links ################################
@@ -308,14 +308,14 @@ helper_parse_kj <- function(.x, .y, city_name) {
     html_node(xpath = 'body[@id = "PageSRP"]') %>%
     length()
 
-  if (redirect_check == 2) return(helper_error_result(.y, city_name))
+  if (redirect_check == 2) return(helper_error_kj(.y, city_name))
 
   expired_check <-
     .x %>%
     html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
     html_text()
 
-  if (!is.na(expired_check)) return(helper_error_result(.y, city_name))
+  if (!is.na(expired_check)) return(helper_error_kj(.y, city_name))
 
 
   ### Parse input ##############################################################
@@ -415,7 +415,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
 #' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
-helper_error_result <- function(.y, city_name) {
+helper_error_kj <- function(.y, city_name) {
 
   tibble(
     id =
@@ -508,6 +508,32 @@ helper_detail_parse <- function(.x) {
 #' @importFrom stringr str_detect str_replace_all
 
 helper_parse_cl <- function(.x, .y, city_name) {
+
+  # Exit early if the listing is NULL
+  if (is.null(.x)) {
+
+    return(
+      tibble(
+        id =
+          .y %>%
+          str_extract('(?<=/)[:digit:]*(?=.html)'),
+        url =
+          .y,
+        title = NA_character_,
+        created = as.Date(NA),
+        scraped = Sys.Date(),
+        price = NA_real_,
+        city = city_name,
+        location = NA_character_,
+        bedrooms = NA_character_,
+        bathrooms = NA_character_,
+        furnished = NA,
+        details = NA_character_,
+        text = NA_character_,
+        photos = vector("list", 1)
+      )
+    )
+  }
 
   tibble(
     id = tryCatch({
