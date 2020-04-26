@@ -133,11 +133,13 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     if (finished_flag[[n]]) {
       if (!quiet) message(silver(bold(glue(
+        "({n}/{length(city)}) ",
         "Recovery data for {city_name} detected; skipping scrape."))))
       next
     }
 
     if (!quiet) message(silver(bold(glue(
+      "({n}/{length(city)}) ",
       "Scraping Kijiji rental listings in {city_name}."))))
 
 

@@ -495,41 +495,20 @@ helper_detail_parse <- function(.x) {
 #' @param city_name A character scalar indicating the name of the city in which
 #' the listing is located.
 #' @return A one-row data frame.
-#' @importFrom dplyr %>% if_else mutate select tibble
-#' @importFrom purrr map_dfr
-#' @importFrom rvest html_node html_nodes html_text
-#' @importFrom readr parse_number
-#' @importFrom stringr str_detect str_replace_all
 
 helper_parse_cl <- function(.x, .y, city_name) {
 
   # Exit early if the listing is NULL
   if (is.null(.x)) {
-
-    return(
-      tibble(
-        id =
-          .y %>%
-          str_extract('(?<=/)[:digit:]*(?=.html)'),
-        url =
-          .y,
-        title = NA_character_,
-        created = as.Date(NA),
-        scraped = Sys.Date(),
-        price = NA_real_,
-        city = city_name,
-        location = NA_character_,
-        bedrooms = NA_character_,
-        bathrooms = NA_character_,
-        furnished = NA,
-        details = NA_character_,
-        text = NA_character_,
-        photos = vector("list", 1)
-      )
-    )
+    return(helper_error_cl(.y, city_name))
   }
 
-  .x <- xml2::read_html(.x, options = "HUGE")
+  # Read listing, and exit early on failure
+  tryCatch({
+    .x <- xml2::read_html(.x, options = "HUGE")
+  }, error = function(e) {
+    return(helper_error_cl(.y, city_name))
+  })
 
   tibble(
     id = tryCatch({
@@ -625,3 +604,38 @@ helper_parse_cl <- function(.x, .y, city_name) {
 
 
 
+#' Helper function to generate error Craigslist output
+#'
+#' @param .y A single Craigslist URL.
+#' @param city_name A character string indicating the name of the city in which
+#' the listing is located.
+#' @return A one-row data frame.
+#' @importFrom dplyr %>% if_else mutate select tibble
+#' @importFrom purrr map_dfr
+#' @importFrom rvest html_node html_nodes html_text
+#' @importFrom readr parse_number
+#' @importFrom stringr str_detect
+
+helper_error_cl <- function(.y, city_name) {
+
+  tibble(
+    id =
+      .y %>%
+      str_extract('(?<=/)[:digit:]*(?=.html)'),
+    url =
+      .y,
+    title = NA_character_,
+    created = as.Date(NA),
+    scraped = Sys.Date(),
+    price = NA_real_,
+    city = city_name,
+    location = NA_character_,
+    bedrooms = NA_character_,
+    bathrooms = NA_character_,
+    furnished = NA,
+    details = NA_character_,
+    text = NA_character_,
+    photos = vector("list", 1)
+  )
+
+}
