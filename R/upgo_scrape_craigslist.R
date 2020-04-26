@@ -238,22 +238,33 @@ upgo_scrape_craigslist <- function(city, old_results = NULL, recovery = FALSE,
 
       updated_results <-
         old_results %>%
-        filter(city == city_name,
-               url %in% url_list[[n]]) %>%
+        filter(city == city_name, url %in% url_list[[n]]) %>%
         mutate(scraped = Sys.Date())
+
+      old_results <-
+        old_results %>%
+        dplyr::anti_join(updated_results, by = "id") %>%
+        bind_rows(updated_results)
+
+      url_list[[n]] <-
+        url_list[[n]][!url_list[[n]] %in% updated_results$url]
+
+      # Advance loop early if there are no new listings
+      if (length(url_list[[n]]) == 0) {
+
+        listings[[n]] <- NULL
+        results[[n]] <- old_results
+
+        if (!quiet) message(silver(glue(
+          "{nrow(updated_results)} previously scraped listings still active. ",
+          "No new results to scrape.")))
+
+        next
+      }
 
       if (!quiet) message(silver(glue(
         "{nrow(updated_results)} previously scraped listings still active.")))
 
-      old_results <-
-        old_results %>%
-        filter(city == city_name,
-               !url %in% url_list[[n]]) %>%
-        bind_rows(updated_results)
-
-      url_list[[n]] <-
-        url_list[[n]][!url_list[[n]] %in%
-                        old_results[old_results$city == city_name,]$url]
 
     }
 
