@@ -96,7 +96,8 @@ helper_download_listing <- function(urls) {
       },
                error = function(e) {
                  httr::reset_config()
-                 httr::GET(urls[[i]], httr::timeout(1))
+                 httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
+                             pause_cap = 5)
                })
   }
 
