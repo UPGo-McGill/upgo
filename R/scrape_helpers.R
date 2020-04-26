@@ -498,17 +498,13 @@ helper_detail_parse <- function(.x) {
 
 helper_parse_cl <- function(.x, .y, city_name) {
 
-  # Exit early if the listing is NULL
+  # Read listing, and exit early on failure
+  .x <-
+    tryCatch(xml2::read_html(.x, options = "HUGE"), error = function(e) NULL)
+
   if (is.null(.x)) {
     return(helper_error_cl(.y, city_name))
   }
-
-  # Read listing, and exit early on failure
-  tryCatch({
-    .x <- xml2::read_html(.x, options = "HUGE")
-  }, error = function(e) {
-    return(helper_error_cl(.y, city_name))
-  })
 
   tibble(
     id = tryCatch({
