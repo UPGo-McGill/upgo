@@ -29,48 +29,6 @@ helper_plan <- function() {
 }
 
 
-#' Helper function to execute paralle network code with proxies
-#'
-#' \code{helper_do_parallel} executes network code in a parallel future with
-#' proxies
-#'
-#' @param iterator The sequence to iterate over
-#' @param statement An expression to evaluate in parallel
-#' @importFrom rlang enexpr
-#' @return A list of evaluated expressions.
-
-helper_do_parallel <- function(iterator, statement) {
-
-  iterator <- enexpr(iterator)
-  statement <- enexpr(statement)
-
-  first_part <- call("foreach", i = iterator)
-
-  if (rlang::env_has(.upgo_env, "proxy_list")) {
-
-    second_part <-
-      substitute({
-        httr::set_config(httr::use_proxy(
-          .upgo_env$proxy_list[[(i %% length(.upgo_env$proxy_list)) + 1]]))
-        .upgo_env$pb()
-        statement
-        })
-
-  } else {
-
-    second_part <-
-      substitute({
-        .upgo_env$pb()
-        statement
-        })
-
-  }
-
-  call("upgo_dopar", first_part, second_part)
-
-}
-
-
 #' Helper function to set a progress reporting strategy
 #'
 #' \code{handler_upgo} sets a progress reporting strategy.

@@ -39,19 +39,15 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
   ## Initialize variables ------------------------------------------------------
 
+  # Quiet R CMD check
   .temp_url_list_short <- .temp_url_list_long <- .temp_url_list <-
-    .temp_listings <- .temp_results <- .temp_finished_flag <- i <- NULL
+    .temp_listings <- .temp_results <- .temp_finished_flag <- NULL
 
-  url_start <- "https://www.kijiji.ca"
-  url_end <- "?ad=offering&siteLocale=en_CA"
+  # Prepare for parallel processing
+  doFuture::registerDoFuture()
 
-  # Default to no progress bar
-  opts <- list()
-
-  if (!quiet) {
-    pb_fun <- function(n) pb$tick()
-    opts <- list(progress = pb_fun)
-  }
+  # Put null progress bar in .upgo_env
+  .upgo_env$pb <-progressor(0)
 
 
   ## Validate city argument ----------------------------------------------------
@@ -76,74 +72,42 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
            "Try re-running with recovery = FALSE.")
     }
 
-    if (short_long %in% c("short", "both")) {
-      url_list_short <- get(".temp_url_list_short", envir = .GlobalEnv)
-      on.exit(.temp_url_list_short <<- url_list_short)
-    }
-
-    if (short_long %in% c("long", "both")) {
-      url_list_long <- get(".temp_url_list_long", envir = .GlobalEnv)
-      on.exit(.temp_url_list_long <<- url_list_long, add = TRUE)
-    }
-
     url_list <- get(".temp_url_list", envir = .GlobalEnv)
-    on.exit(.temp_url_list <<- url_list, add = TRUE)
-
     listings <- get(".temp_listings", envir = .GlobalEnv)
-    on.exit(.temp_listings <<- listings, add = TRUE)
-
     results <- get(".temp_results", envir = .GlobalEnv)
-    on.exit(.temp_results <<- results, add = TRUE)
-
-    on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
 
   ## Initialize objects if recovery == FALSE -----------------------------------
 
   } else {
 
-    if (short_long %in% c("short", "both")) {
-      url_list_short <- vector("list", length(city))
-      on.exit(.temp_url_list_short <<- url_list_short)
-    }
-
-    if (short_long %in% c("long", "both")) {
-      url_list_long <- vector("list", length(city))
-      on.exit(.temp_url_list_long <<- url_list_long, add = TRUE)
-    }
-
     url_list <- vector("list", length(city))
-    on.exit(.temp_url_list <<- url_list, add = TRUE)
-
     listings <- vector("list", length(city))
-    on.exit(.temp_listings <<- listings, add = TRUE)
-
     results <- vector("list", length(city))
-    on.exit(.temp_results <<- results, add = TRUE)
-
     finished_flag <- map(seq_along(city), ~FALSE)
-    on.exit(.temp_finished_flag <<- finished_flag, add = TRUE)
 
   }
 
 
-  ## Initialize multicore processing and proxies -------------------------------
+  ## Set on.exit expression ----------------------------------------------------
 
-  if (!quiet && cores > 1) message(silver(glue(
-    "Initializing {cores} processing threads.")))
+  on.exit({
+    .temp_url_list <<- url_list
+    .temp_listings <<- listings
+    .temp_finished_flag <<- finished_flag
+    .temp_results <<- results
+  })
 
-  `%dopar%` <- foreach::`%dopar%`
 
-  (cl <- cores %>% makeCluster()) %>% registerDoSNOW()
+  ## Initialize proxies --------------------------------------------------------
 
   if (!missing(proxies)) {
 
-    proxy_reps <- ceiling(cores/length(proxies))
-    proxy_list <- rep(proxies, proxy_reps)[seq_len(cores)]
+    # Put proxy list in .upgo_env so it can be accessed from child functions
+    .upgo_env$proxy_list <- proxies
 
-    clusterApply(cl, proxy_list, function(x) {
-      set_config(use_proxy(str_extract(x, '(?<=server=).*')))
-    })
+    on.exit(rlang::env_unbind(.upgo_env, "proxy_list"), add = TRUE)
+
   }
 
 
@@ -177,109 +141,44 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       "Scraping Kijiji rental listings in {city_name}."))))
 
 
-    ## Construct listing page URLs ---------------------------------------------
+    ## Retrieve URLs -----------------------------------------------------------
 
     # STR
     if (short_long %in% c("short", "both")) {
 
-      city_short <- case_when(
-        city_name == "Montreal" ~
-          c("/b-location-court-terme/ville-de-montreal/", "c42l1700281"),
-        city_name == "Toronto" ~
-          c("/b-short-term-rental/city-of-toronto/", "c42l1700273"),
-        city_name == "Vancouver" ~
-          c("/b-short-term-rental/vancouver/", "c42l1700287")
-      )
+      start_time <- Sys.time()
 
-      listings_url_short <-
-        paste0(url_start, city_short[[1]], city_short[[2]], url_end)
+      handler_upgo("Scraping STR page")
+
+      if (!quiet) {
+        with_progress(url_list_short <- helper_urls_kj(city_name, "short"))
+      } else {
+        url_list_short <- helper_urls_kj(city_name, "short")
+      }
+
+      # Clean up
+      total_time <- Sys.time() - start_time
+      time_final_1 <- substr(total_time, 1, 4)
+      time_final_2 <- attr(total_time, 'units')
+
+      if (!quiet) {
+        message(silver(length(url_list[[n]]), "STR listing URLs scraped in "),
+                cyan(time_final_1, time_final_2), silver("."))
+      }
+
     }
-
 
     # LTR
     if (short_long %in% c("long", "both")) {
 
-      city_long <- case_when(
-        city_name == "Montreal" ~
-          c("/b-apartments-condos/ville-de-montreal/", "c37l1700281"),
-        city_name == "Toronto" ~
-          c("/b-apartments-condos/city-of-toronto/", "c37l1700273"),
-        city_name == "Vancouver" ~
-          c("/b-apartments-condos/vancouver/", "c37l1700287")
-      )
-
-      listings_url_long <-
-        paste0(url_start, city_long[[1]], city_long[[2]], url_end)
-    }
-
-
-    ## Get STR URLs ------------------------------------------------------------
-
-    if (short_long %in% c("short", "both")) {
-
       start_time <- Sys.time()
 
-      # Find number of pages to scrape
-      listings_to_scrape <-
-        read_html(listings_url_short) %>%
-        html_node(xpath = '//*[@class="showing"]') %>%
-        html_text() %>%
-        str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
-        parse_number() %>%
-        as.integer()
+      handler_upgo("Scraping LTR page")
 
-      pages <- min(ceiling(listings_to_scrape / 40), 100)
-
-      # Prepare progress bar
       if (!quiet) {
-        pb <- progress_bar$new(format = silver(italic(
-          "Scraping STR page :current of :total [:bar] :percent, ETA: :eta")),
-          # If pages == 100, need to scrape again in ascending order
-          total = if_else(pages == 100, 200, pages), show_after = 0)
-
-        pb$tick(0)
-      }
-
-      # Scrape in descending order
-      url_list_short[[n]] <-
-        foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
-
-          tryCatch({
-            suppressWarnings(
-              read_html(GET(paste0(
-                url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
-                url_end))) %>%
-                html_nodes(xpath = '//*[@class="title"]') %>%
-                str_extract('(?<=href=").*(?=" c)')
-              )
-            }, error = function(e) NULL)
-        }
-
-      url_list_short[[n]] <-
-        paste0(url_start, unique(unlist(url_list_short[[n]])))
-
-      # If pages == 100, scrape again in ascending order
-      if (pages == 100) {
-
-        url_list_short_2 <-
-          foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
-
-          tryCatch({
-            suppressWarnings(
-              read_html(GET(paste0(
-                url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
-                url_end, "&sort=dateAsc"))) %>%
-                html_nodes(xpath = '//*[@class="title"]') %>%
-                str_extract('(?<=href=").*(?=" c)')
-              )
-            }, error = function(e) NULL)
-        }
-
-        url_list_short[[n]] <-
-          unique(c(
-            url_list_short[[n]],
-            paste0(url_start, unlist(url_list_short_2))
-            ))
+        with_progress(url_list_long <- helper_urls_kj(city_name, "long"))
+      } else {
+        url_list_long <- helper_urls_kj(city_name, "long")
       }
 
       # Clean up
@@ -288,92 +187,31 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       time_final_2 <- attr(total_time, 'units')
 
       if (!quiet) {
-        message(silver(length(url_list_short[[n]]),
-                       "STR listing URLs scraped in "),
+        message(silver(length(url_list[[n]]), "LTR listing URLs scraped in "),
                 cyan(time_final_1, time_final_2), silver("."))
       }
+
     }
 
 
-    ## Get LTR URLs ------------------------------------------------------------
+    ## Combine URLs into single list -------------------------------------------
 
-    if (short_long %in% c("long", "both")) {
+    url_list[[n]] <-
+      dplyr::case_when(
+        short_long == "both"  ~ unique(c(url_list_short, url_list_long)),
+        short_long == "short" ~ url_list_short,
+        short_long == "long"  ~ url_list_long
+        )
 
-      start_time <- Sys.time()
+    # Still needed?
+    url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
+    url_list[[n]] <- str_replace(url_list[[n]], " ", "")
 
-      # Find number of pages to scrape
-      listings_to_scrape <-
-        read_html(listings_url_long) %>%
-        html_node(xpath = '//*[@class="showing"]') %>%
-        html_text() %>%
-        str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
-        parse_number() %>%
-        as.integer()
 
-      pages <- min(ceiling(listings_to_scrape / 40), 100L)
 
-      # Prepare progress bar
-      if (!quiet) {
-        pb <- progress_bar$new(format = silver(italic(
-          "Scraping LTR page :current of :total [:bar] :percent, ETA: :eta")),
-          # If pages == 100, need to scrape again in ascending order
-          total = if_else(pages == 100, 200, pages), show_after = 0)
 
-        pb$tick(0)
-      }
 
-      # Scrape in descending order
-      url_list_long[[n]] <-
-        foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
 
-          tryCatch({
-            suppressWarnings(
-              read_html(paste0(
-                url_start, city_long[[1]], "page-", i, "/", city_long[[2]],
-                url_end)) %>%
-                html_nodes(xpath = '//*[@class="title"]') %>%
-                str_extract('(?<=href=").*(?=" c)')
-              )
-            }, error = function(e) NULL)
-        }
-
-      url_list_long[[n]] <-
-        paste0(url_start, unique(unlist(url_list_long[[n]])))
-
-      # If pages == 100, scrape again in ascending order
-      if (pages == 100) {
-
-        url_list_long_2 <-
-          foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
-
-            tryCatch({
-              suppressWarnings(
-                read_html(paste0(
-                  url_start, city_long[[1]], "page-", i, "/", city_long[[2]],
-                  url_end, "&sort=dateAsc")) %>%
-                  html_nodes(xpath = '//*[@class="title"]') %>%
-                  str_extract('(?<=href=").*(?=" c)')
-                )
-              }, error = function(e) NULL)
-          }
-
-        url_list_long[[n]] <-
-          unique(c(
-            url_list_long[[n]],
-            paste0(url_start, unlist(url_list_long_2))))
-      }
-
-      # Clean up
-      total_time <- Sys.time() - start_time
-      time_final_1 <- substr(total_time, 1, 4)
-      time_final_2 <- attr(total_time, 'units')
-
-      if (!quiet) {
-        message(silver(length(url_list_long[[n]]),
-                       "LTR listing URLs scraped in "),
-                cyan(time_final_1, time_final_2), silver("."))
-      }
-    }
 
 
     ## Combine URLs into single list -------------------------------------------

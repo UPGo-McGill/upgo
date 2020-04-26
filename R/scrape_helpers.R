@@ -1,6 +1,6 @@
 #' Helper function to scrape Craigslist listing URLs
 #'
-#' \code{helper_cl_urls} scrapes Craigslist listing URLs for a city.
+#' \code{helper_urls_cl} scrapes Craigslist listing URLs for a city.
 #'
 #' @param city_name A character string: the city to be scraped.
 #' @importFrom progressr handlers handler_progress progressor
@@ -9,7 +9,7 @@
 #' @importFrom xml2 xml_children
 #' @return A list of URLs.
 
-helper_cl_urls <- function(city_name) {
+helper_urls_cl <- function(city_name) {
 
   ## Define environment for %do_upgo% function ---------------------------------
 
@@ -62,6 +62,152 @@ helper_cl_urls <- function(city_name) {
 }
 
 
+#' Helper function to scrape Kijiji listing URLs
+#'
+#' \code{helper_urls_kj} scrapes Kijiji listing URLs for a city.
+#'
+#' @param city_name A character string: the city to be scraped.
+#' @param short_long A character string, either "short" or "long", to determine
+#' whether STR or LTR listing URLs should be scraped.
+#' @return A list of URLs.
+
+helper_urls_kj <- function(city_name, short_long) {
+
+  ## Define environment for %do_upgo% function ---------------------------------
+
+  environment(`%do_upgo%`) <- environment()
+
+
+  ## Initialie variables -------------------------------------------------------
+
+  url_start <- "https://www.kijiji.ca"
+  url_end <- "?ad=offering&siteLocale=en_CA"
+
+
+  ## Construct listing page URL ------------------------------------------------
+
+  # STR
+  if (short_long == "short") {
+
+    city_short <-
+      dplyr::case_when(
+        city_name == "Montreal" ~
+          c("/b-location-court-terme/ville-de-montreal/", "c42l1700281"),
+        city_name == "Toronto" ~
+          c("/b-short-term-rental/city-of-toronto/", "c42l1700273"),
+        city_name == "Vancouver" ~
+          c("/b-short-term-rental/vancouver/", "c42l1700287")
+        )
+
+    listings_url <- paste0(url_start, city_short[[1]], city_short[[2]], url_end)
+  }
+
+
+  # LTR
+  if (short_long %in% c("long", "both")) {
+
+    city_long <-
+      dplyr::case_when(
+        city_name == "Montreal" ~
+          c("/b-apartments-condos/ville-de-montreal/", "c37l1700281"),
+        city_name == "Toronto" ~
+          c("/b-apartments-condos/city-of-toronto/", "c37l1700273"),
+        city_name == "Vancouver" ~
+          c("/b-apartments-condos/vancouver/", "c37l1700287")
+        )
+
+    listings_url <- paste0(url_start, city_long[[1]], city_long[[2]], url_end)
+  }
+
+
+  ## Find number of pages to scrape --------------------------------------------
+
+  # Find number of pages to scrape
+  listings_to_scrape <-
+    xml2::read_html(listings_url) %>%
+    rvest::html_node(xpath = '//*[@class="showing"]') %>%
+    rvest::html_text() %>%
+    stringr::str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
+    readr::parse_number() %>%
+    as.integer()
+
+  pages <- min(ceiling(listings_to_scrape / 40), 100)
+
+
+  ## Prepare progress reporting ------------------------------------------------
+
+  .upgo_env$pb <- progressor(steps = pages)
+
+
+  ## Scrape pages in descending order ------------------------------------------
+
+  # Scrape in descending order
+  url_list_short <-
+    foreach (i = seq_len(pages)) %do_upgo% {
+
+      tryCatch({
+        suppressWarnings(
+          read_html(GET(paste0(
+            url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
+            url_end))) %>%
+            html_nodes(xpath = '//*[@class="title"]') %>%
+            str_extract('(?<=href=").*(?=" c)')
+        )
+      }, error = function(e) NULL)
+    }
+
+  url_list_short[[n]] <-
+    paste0(url_start, unique(unlist(url_list_short[[n]])))
+
+  # If pages == 100, scrape again in ascending order
+  if (pages == 100) {
+
+    url_list_short_2 <-
+      foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
+
+        tryCatch({
+          suppressWarnings(
+            read_html(GET(paste0(
+              url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
+              url_end, "&sort=dateAsc"))) %>%
+              html_nodes(xpath = '//*[@class="title"]') %>%
+              str_extract('(?<=href=").*(?=" c)')
+          )
+        }, error = function(e) NULL)
+      }
+
+    url_list_short[[n]] <-
+      unique(c(
+        url_list_short[[n]],
+        paste0(url_start, unlist(url_list_short_2))
+      ))
+  }
+
+
+
+
+
+  url_list <-
+    foreach(i = seq_len(pages)) %do_upgo% {
+      xml2::read_html(httr::GET(paste0(
+        "https://", city_name, ".craigslist.org/search/apa?s=",
+        120 * (i - 1), "&lang=en&cc=us"))) %>%
+        rvest::html_nodes(".result-row") %>%
+        xml2::xml_children() %>%
+        rvest::html_attr("href") %>%
+        na.omit()
+    }
+
+
+  ## Merge and clean up list ---------------------------------------------------
+
+  url_list <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
+
+  return(url_list)
+
+}
+
+
 #' Helper function to download Craigslist or Kijiji listings
 #'
 #' \code{helper_download_listing} scrapes listings from a list of URLs.
@@ -92,19 +238,24 @@ helper_download_listing <- function(urls) {
   listings <-
     foreach(i = seq_along(urls)) %do_upgo% {
       tryCatch({
-        httr::GET(urls[[i]], httr::timeout(1))
-      },
-               error = function(e) {
-                 httr::reset_config()
-                 httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
-                             pause_cap = 5)
-               })
+        tryCatch(httr::GET(urls[[i]], httr::timeout(1)),
+                 error = function(e) {
+                   httr::reset_config()
+                   httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
+                               pause_cap = 5, terminate_on = 404)
+                   })
+        },
+        error = function(e) NULL)
   }
 
 
-  ## Reconstitute listings and delete temp files -------------------------------
+  ## Reconstitute listings -----------------------------------------------------
 
-  listings <- purrr::map(listings, read_html, options = "HUGE")
+  listings <-
+    purrr::map(listings, ~{
+      tryCatch(xml2::read_html(.x, options = "HUGE"),
+               error = function(e) NULL)
+      })
 
   # Make sure that listings[[n]] is the right length if last element is NULL
   if (length(listings) != length(urls)) {

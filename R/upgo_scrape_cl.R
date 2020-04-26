@@ -165,6 +165,7 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
 
   }
 
+
   ## Set on.exit expression ----------------------------------------------------
 
   on.exit({
@@ -200,7 +201,7 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
 
     if (finished_flag[[n]]) {
       if (!quiet) message(silver(bold(glue(
-        "Recovery data for {city_name} detected; skipping scrape."))))
+        "Recovery data for '{city_name}' detected; skipping scrape."))))
       next
     }
 
@@ -216,9 +217,9 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
     handler_upgo("Scraping page")
 
     if (!quiet) {
-      with_progress(url_list[[n]] <- helper_cl_urls(city_name))
+      with_progress(url_list[[n]] <- helper_urls_cl(city_name))
     } else {
-      url_list[[n]] <- helper_cl_urls(city_name)
+      url_list[[n]] <- helper_urls_cl(city_name)
     }
 
     # Clean up
