@@ -249,13 +249,7 @@ helper_download_listing <- function(urls) {
   }
 
 
-  ## Reconstitute listings -----------------------------------------------------
-
-  listings <-
-    purrr::map(listings, ~{
-      tryCatch(xml2::read_html(.x, options = "HUGE"),
-               error = function(e) NULL)
-      })
+  ## Clean up and exit ---------------------------------------------------------
 
   # Make sure that listings[[n]] is the right length if last element is NULL
   if (length(listings) != length(urls)) {
@@ -534,6 +528,8 @@ helper_parse_cl <- function(.x, .y, city_name) {
       )
     )
   }
+
+  .x <- xml2::read_html(.x, options = "HUGE")
 
   tibble(
     id = tryCatch({
