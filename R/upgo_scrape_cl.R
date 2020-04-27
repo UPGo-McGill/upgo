@@ -336,7 +336,9 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
 
     if (!missing(old_results)) {
       results[[n]] <-
-        bind_rows(results[[n]], old_results)
+        old_results %>%
+        filter(.data$city == city_name) %>%
+        bind_rows(results[[n]])
     }
 
     results[[n]] <-
