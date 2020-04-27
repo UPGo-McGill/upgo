@@ -78,7 +78,7 @@ helper_urls_kj <- function(city_name, short_long) {
   environment(`%do_upgo%`) <- environment()
 
 
-  ## Initialie variables -------------------------------------------------------
+  ## Initialize variables ------------------------------------------------------
 
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
@@ -89,7 +89,7 @@ helper_urls_kj <- function(city_name, short_long) {
   # STR
   if (short_long == "short") {
 
-    city_short <-
+    city_vec <-
       dplyr::case_when(
         city_name == "Montreal" ~
           c("/b-location-court-terme/ville-de-montreal/", "c42l1700281"),
@@ -99,14 +99,13 @@ helper_urls_kj <- function(city_name, short_long) {
           c("/b-short-term-rental/vancouver/", "c42l1700287")
         )
 
-    listings_url <- paste0(url_start, city_short[[1]], city_short[[2]], url_end)
+    listings_url <- paste0(url_start, city_vec[[1]], city_vec[[2]], url_end)
   }
-
 
   # LTR
   if (short_long %in% c("long", "both")) {
 
-    city_long <-
+    city_vec <-
       dplyr::case_when(
         city_name == "Montreal" ~
           c("/b-apartments-condos/ville-de-montreal/", "c37l1700281"),
@@ -116,7 +115,7 @@ helper_urls_kj <- function(city_name, short_long) {
           c("/b-apartments-condos/vancouver/", "c37l1700287")
         )
 
-    listings_url <- paste0(url_start, city_long[[1]], city_long[[2]], url_end)
+    listings_url <- paste0(url_start, city_vec[[1]], city_vec[[2]], url_end)
   }
 
 
@@ -136,72 +135,47 @@ helper_urls_kj <- function(city_name, short_long) {
 
   ## Prepare progress reporting ------------------------------------------------
 
-  .upgo_env$pb <- progressor(steps = pages)
+  .upgo_env$pb <- progressor(steps = if_else(pages == 100, 200, pages))
 
 
-  ## Scrape pages in descending order ------------------------------------------
+  ## Scrape pages --------------------------------------------------------------
 
   # Scrape in descending order
-  url_list_short <-
+  url_list <-
     foreach (i = seq_len(pages)) %do_upgo% {
 
       tryCatch({
-        suppressWarnings(
-          read_html(GET(paste0(
-            url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
-            url_end))) %>%
-            html_nodes(xpath = '//*[@class="title"]') %>%
-            str_extract('(?<=href=").*(?=" c)')
-        )
+        xml2::read_html(httr::GET(paste0(
+          url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
+          url_end))) %>%
+          rvest::html_nodes(xpath = '//*[@class="title"]') %>%
+          xml2::xml_children() %>%
+          rvest::html_attr("href") %>%
+          na.omit()
       }, error = function(e) NULL)
     }
 
-  url_list_short[[n]] <-
-    paste0(url_start, unique(unlist(url_list_short[[n]])))
+  url_list <- paste0(url_start, unique(unlist(url_list)))
 
   # If pages == 100, scrape again in ascending order
   if (pages == 100) {
 
-    url_list_short_2 <-
-      foreach (i = seq_len(pages), .options.snow = opts) %dopar% {
+    url_list_2 <-
+      foreach (i = seq_len(pages)) %do_upgo% {
 
-        tryCatch({
-          suppressWarnings(
-            read_html(GET(paste0(
-              url_start, city_short[[1]], "page-", i, "/", city_short[[2]],
-              url_end, "&sort=dateAsc"))) %>%
-              html_nodes(xpath = '//*[@class="title"]') %>%
-              str_extract('(?<=href=").*(?=" c)')
-          )
-        }, error = function(e) NULL)
+        xml2::read_html(httr::GET(paste0(
+          url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]], url_end,
+          "&sort=dateAsc"))) %>%
+          rvest::html_nodes(xpath = '//*[@class="title"]') %>%
+          xml2::xml_children() %>%
+          rvest::html_attr("href") %>%
+          na.omit()
+
       }
 
-    url_list_short[[n]] <-
-      unique(c(
-        url_list_short[[n]],
-        paste0(url_start, unlist(url_list_short_2))
-      ))
+    url_list <-
+      unique(c(url_list, paste0(url_start, unlist(url_list_2))))
   }
-
-
-
-
-
-  url_list <-
-    foreach(i = seq_len(pages)) %do_upgo% {
-      xml2::read_html(httr::GET(paste0(
-        "https://", city_name, ".craigslist.org/search/apa?s=",
-        120 * (i - 1), "&lang=en&cc=us"))) %>%
-        rvest::html_nodes(".result-row") %>%
-        xml2::xml_children() %>%
-        rvest::html_attr("href") %>%
-        na.omit()
-    }
-
-
-  ## Merge and clean up list ---------------------------------------------------
-
-  url_list <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
 
   return(url_list)
 
@@ -278,12 +252,13 @@ helper_download_listing <- function(urls) {
 
 helper_parse_kj <- function(.x, .y, city_name) {
 
-  ### Test if the input is valid, and redownload if not ########################
+  ### Read listing, and exit early on failure ##################################
 
-  retry <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
+  .x <-
+    tryCatch(xml2::read_html(.x, options = "HUGE"), error = function(e) NULL)
 
-  if (retry) {
-    .x <- read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
+  if (is.null(.x)) {
+    return(helper_error_kj(.y, city_name))
   }
 
 

@@ -10,7 +10,6 @@ upgo_scrape_kj(
   short_long = "both",
   recovery = FALSE,
   proxies = NULL,
-  cores = 1L,
   quiet = FALSE
 )
 }
@@ -30,9 +29,6 @@ results from a previous, unsuccessful function call?}
 
 \item{proxies}{Character vector of IPs to use for proxy connections. If
 supplied, this must be at least as long as the number of cores.}
-
-\item{cores}{A positive integer scalar. How many processing cores should be
-used to scrape?}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}

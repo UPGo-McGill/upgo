@@ -268,7 +268,6 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
       if (!quiet) message(silver(glue(
         "{nrow(updated_results)} previously scraped listings still active.")))
 
-
     }
 
 
@@ -308,16 +307,22 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
 
     start_time <- Sys.time()
 
-    with_progress({
-      .upgo_env$pb <- progressor(along = listings[[n]])
+    if (!quiet) {
+      with_progress({
+        .upgo_env$pb <- progressor(along = listings[[n]])
 
+        results[[n]] <-
+          furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
+            .upgo_env$pb()
+            helper_parse_cl(.x, .y, city_name)
+        })})
+
+    } else {
       results[[n]] <-
-        furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
-          .upgo_env$pb()
-          helper_parse_cl(.x, .y, city_name)
-          }
-        )
-      })
+        furrr::future_map2_dfr(listings[[n]], url_list[[n]], helper_parse_cl,
+                               city_name)
+      }
+
 
 
     ## Clean up ----------------------------------------------------------------

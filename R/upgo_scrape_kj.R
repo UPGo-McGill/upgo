@@ -14,8 +14,6 @@
 #' results from a previous, unsuccessful function call?
 #' @param proxies Character vector of IPs to use for proxy connections. If
 #' supplied, this must be at least as long as the number of cores.
-#' @param cores A positive integer scalar. How many processing cores should be
-#' used to scrape?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
@@ -32,8 +30,7 @@
 #' @export
 
 upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
-                               recovery = FALSE, proxies = NULL, cores = 1L,
-                               quiet = FALSE) {
+                           recovery = FALSE, proxies = NULL, quiet = FALSE) {
 
   ### SETUP ####################################################################
 
@@ -140,7 +137,8 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     if (!quiet) message(silver(bold(glue(
       "({n}/{length(city)}) ",
-      "Scraping Kijiji rental listings in {city_name}."))))
+      "Scraping Kijiji rental listings in {city_name} ",
+      "with {helper_plan()}."))))
 
 
     ## Retrieve URLs -----------------------------------------------------------
@@ -164,7 +162,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       time_final_2 <- attr(total_time, 'units')
 
       if (!quiet) {
-        message(silver(length(url_list[[n]]), "STR listing URLs scraped in "),
+        message(silver(length(url_list_short), "STR listing URLs scraped in "),
                 cyan(time_final_1, time_final_2), silver("."))
       }
 
@@ -189,7 +187,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       time_final_2 <- attr(total_time, 'units')
 
       if (!quiet) {
-        message(silver(length(url_list[[n]]), "LTR listing URLs scraped in "),
+        message(silver(length(url_list_long), "LTR listing URLs scraped in "),
                 cyan(time_final_1, time_final_2), silver("."))
       }
 
@@ -198,36 +196,21 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     ## Combine URLs into single list -------------------------------------------
 
-    url_list[[n]] <-
-      dplyr::case_when(
-        short_long == "both"  ~ unique(c(url_list_short, url_list_long)),
-        short_long == "short" ~ url_list_short,
-        short_long == "long"  ~ url_list_long
-        )
-
-    # Still needed?
-    url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
-    url_list[[n]] <- str_replace(url_list[[n]], " ", "")
-
-
-
-
-
-
-
-
-    ## Combine URLs into single list -------------------------------------------
-
     if (short_long == "both") {
-      url_list[[n]] <- unique(c(url_list_short[[n]], url_list_long[[n]]))
-    } else if (short_long == "short") {
-      url_list[[n]] <- url_list_short[[n]]
-    } else if (short_long == "long") {
-      url_list[[n]] <- url_list_long[[n]]
+      url_list[[n]] <- unique(c(url_list_short, url_list_long))
     }
 
-    url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
-    url_list[[n]] <- str_replace(url_list[[n]], " ", "")
+    if (short_long == "short") {
+      url_list[[n]] <- url_list_short
+    }
+
+    if (short_long == "long") {
+      url_list[[n]] <- url_list_long
+    }
+
+    # # Still needed?
+    # url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
+    # url_list[[n]] <- str_replace(url_list[[n]], " ", "")
 
 
     ## Process duplicate listings if old_results is provided -------------------
@@ -239,18 +222,29 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
         filter(city == city_name, url %in% url_list[[n]]) %>%
         mutate(scraped = Sys.Date())
 
-      if (!quiet) message(silver(glue(
-        "{nrow(updated_results)} previously scraped listings still active.")))
-
       old_results <-
         old_results %>%
-        filter(city != city_name |
-                 (city == city_name & !url %in% url_list[[n]])) %>%
+        dplyr::anti_join(updated_results, by = "id") %>%
         bind_rows(updated_results)
 
       url_list[[n]] <-
-        url_list[[n]][!url_list[[n]] %in%
-                        old_results[old_results$city == city_name,]$url]
+        url_list[[n]][!url_list[[n]] %in% updated_results$url]
+
+      # Advance loop early if there are no new listings
+      if (length(url_list[[n]]) == 0) {
+
+        listings[[n]] <- NULL
+        results[[n]] <- old_results
+
+        if (!quiet) message(silver(glue(
+          "{nrow(updated_results)} previously scraped listings still active. ",
+          "No new results to scrape.")))
+
+        next
+      }
+
+      if (!quiet) message(silver(glue(
+        "{nrow(updated_results)} previously scraped listings still active.")))
 
     }
 
@@ -259,9 +253,20 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     start_time <- Sys.time()
 
-    listings[[n]] <-
-      paste0(url_list[[n]], "?siteLocale=en_CA") %>%
-      helper_download_listing()
+    handler_upgo("Scraping listing")
+
+    if (!quiet) {
+      with_progress(
+        listings[[n]] <-
+          paste0(url_list[[n]], "?siteLocale=en_CA") %>%
+          helper_download_listing()
+      )
+
+    } else {
+      listings[[n]] <-
+        paste0(url_list[[n]], "?siteLocale=en_CA") %>%
+        helper_download_listing()
+    }
 
     # Clean up
     total_time <- Sys.time() - start_time
@@ -276,21 +281,37 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     ## Parse HTML --------------------------------------------------------------
 
+    handler_upgo("Parsing result")
+
     start_time <- Sys.time()
 
     if (!quiet) {
-      pb <- progress_bar$new(format = silver(italic(
-        "Parsing result :current of :total [:bar] :percent, ETA: :eta")),
-        total = length(listings[[n]]), show_after = 0)
+      with_progress({
+        .upgo_env$pb <- progressor(along = listings[[n]])
 
-      pb$tick(0)
+        results[[n]] <-
+          furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
+            .upgo_env$pb()
+            helper_parse_kj(.x, .y, city_name)
+          })})
+
+    } else {
+      results[[n]] <-
+        furrr::future_map2_dfr(listings[[n]], url_list[[n]], helper_parse_kj,
+                               city_name)
     }
 
-    results[[n]] <-
-      map2_dfr(listings[[n]], url_list[[n]], ~{
-        if (!quiet) pb$tick()
-        helper_parse_kijiji(.x, .y, city_name)
-        })
+
+    ## Clean up ----------------------------------------------------------------
+
+    total_time <- Sys.time() - start_time
+    time_final_1 <- substr(total_time, 1, 4)
+    time_final_2 <- attr(total_time, 'units')
+
+    if (!quiet) {
+      message(silver(nrow(results[[n]]), "listings parsed in "),
+              cyan(time_final_1, time_final_2), silver("."))
+    }
 
 
     ## Rbind with old_results if present, then arrange -------------------------
@@ -298,7 +319,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     if (!missing(old_results)) {
       results[[n]] <-
         old_results %>%
-        filter(city == city_name) %>%
+        filter(.data$city == city_name) %>%
         bind_rows(results[[n]])
     }
 
@@ -311,17 +332,6 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     finished_flag[[n]] <- TRUE
 
-
-    ## Clean up ----------------------------------------------------------------
-
-    total_time <- Sys.time() - start_time
-    time_final_1 <- substr(total_time, 1, 4)
-    time_final_2 <- attr(total_time, 'units')
-
-    if (!quiet) {
-      message(silver(length(listings[[n]]), "listings parsed in "),
-              cyan(time_final_1, time_final_2), silver("."))
-    }
   }
 
 
@@ -329,9 +339,11 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
   results <- bind_rows(results)
 
-  on.exit()
+  if (!missing(proxies)) {
+    on.exit(rlang::env_unbind(.upgo_env, "proxy_list"))
+  } else on.exit()
 
-  results
+  return(results)
 
 }
 
