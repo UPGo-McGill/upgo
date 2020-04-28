@@ -7,12 +7,14 @@
 #' assigns an object `rD` to the global environment, and will overwrite any
 #' existing object with the same name without warning.
 #'
+#' @param chrome A character string specifying the version of Chrome to be used
+#' with Selenium.
 #' @return The function returns a connection object, which it assigns to `rD` in
 #' the global environment.
 #' @import RSelenium
 #' @export
 
-upgo_scrape_connect <- function() {
+upgo_scrape_connect <- function(chrome = "81.0.4044.69") {
 
   rD <- NULL
 
@@ -21,7 +23,7 @@ upgo_scrape_connect <- function() {
     w3c = FALSE))
 
   rD <<- rsDriver(port = 4444L, browser = "chrome",
-                  chromever = "79.0.3945.36", extraCapabilities = eCaps)
+                  chromever = chrome, extraCapabilities = eCaps)
 }
 
 
