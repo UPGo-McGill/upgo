@@ -40,12 +40,16 @@ helper_plan <- function() {
 
 handler_upgo <- function(message) {
 
+  cray_opt <- .Options$crayon.enabled
+  if (crayon::has_color()) options(crayon.enabled = TRUE)
+  on.exit(.Options$crayon.enabled <- cray_opt)
+
   handlers(
     handler_progress(
-      format = as.character(silver(italic(paste0(
+      format = silver(italic(paste0(
         message, " :current of :total [:bar] :percent, ETA: :eta"))),
       show_after = 0
-    )))
+    ))
 }
 
 
