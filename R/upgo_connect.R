@@ -35,7 +35,7 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
     host_inactive_all <- reviews_all <- NULL
 
   # Check for .con local DB
-  if (exists(".con", envir = .GlobalEnv)) local <- TRUE
+  if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
 
   # Decide if remote connection is necessary
   if (remote | daily_inactive | host_inactive | reviews | local == FALSE) {
