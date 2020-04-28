@@ -20,30 +20,34 @@
 
 upgo_aws_download <- function(object_name, file_path = NULL, quiet = FALSE) {
 
-  time_1 <- Sys.time()
+  if (requireNamespace("paws", quietly = TRUE)) {
 
-  file_path_final <- object_name
+    time_1 <- Sys.time()
 
-  if (!missing(file_path)) {
-    file_path_final <- paste0(file_path, "/", file_path_final)
+    file_path_final <- object_name
+
+    if (!missing(file_path)) {
+      file_path_final <- paste0(file_path, "/", file_path_final)
+    }
+
+    if (!quiet) message("Beginning file download. (",
+                        substr(Sys.time(), 12, 19), ")")
+
+    upgo_bucket <- paws::s3()
+
+    obj <- upgo_bucket$get_object(Bucket = "airdna-data",
+                                  Key = paste0("McGill/", object_name))
+
+    writeBin(obj$Body, con = file_path_final)
+
+    total_time <- Sys.time() - time_1
+
+    if (!quiet) {message("Download complete. (",
+                         substr(Sys.time(), 12, 19), ")")}
+
+    if (!quiet) {message("Total time: ",
+                         substr(total_time, 1, 5), " ",
+                         attr(total_time, "units"), ".")}
+
+  } else message("This function requires the package {paws} to be loaded.")
   }
-
-  if (!quiet) message("Beginning file download. (",
-                      substr(Sys.time(), 12, 19), ")")
-
-  upgo_bucket <- paws::s3()
-
-  obj <- upgo_bucket$get_object(Bucket = "airdna-data",
-                           Key = paste0("McGill/", object_name))
-
-  writeBin(obj$Body, con = file_path_final)
-
-  total_time <- Sys.time() - time_1
-
-  if (!quiet) {message("Download complete. (",
-                       substr(Sys.time(), 12, 19), ")")}
-
-  if (!quiet) {message("Total time: ",
-                       substr(total_time, 1, 5), " ",
-                       attr(total_time, "units"), ".")}
-}
