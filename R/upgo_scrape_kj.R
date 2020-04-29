@@ -18,7 +18,6 @@
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.
 #' @importFrom crayon bold cyan italic silver
-#' @importFrom doSNOW registerDoSNOW
 #' @importFrom dplyr %>% arrange bind_rows if_else
 #' @importFrom glue glue
 #' @importFrom httr GET set_config use_proxy

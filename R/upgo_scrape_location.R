@@ -258,5 +258,3 @@ upgo_scrape_location <- function(property, chunk_size = 100, proxies = NULL,
 
 }
 
-
-

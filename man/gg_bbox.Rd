@@ -7,7 +7,7 @@
 gg_bbox(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1, ...)
 }
 \arguments{
-\item{geom}{TKTK}
+\item{geom}{An sf table whose bounding box will be used for ggplot.}
 
 \item{x1}{TKTK}
 
