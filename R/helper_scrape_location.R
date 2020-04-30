@@ -36,7 +36,7 @@ helper_scrape_location <- function(PID) {
 
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
 
-    scrape_result[1, 2] <- list("NO LISTING")
+    scrape_result[1,]$raw <- list("NO LISTING")
 
     return(scrape_result)
   }
@@ -44,15 +44,15 @@ helper_scrape_location <- function(PID) {
 
   ### Try regular listing type #################################################
 
-  # This now seems to be obsolete?
-  elements <- remDr$findElements("class", "_abw475")
+  # This seems to be the new class
+  elements <- remDr$findElements("class", "_5twioja")
 
 
   ### Test URL for missing listing again #######################################
 
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
 
-    scrape_result[1, 2] <- list("NO LISTING")
+    scrape_result[1,]$raw <- list("NO LISTING")
 
     return(scrape_result)
   }
@@ -64,9 +64,11 @@ helper_scrape_location <- function(PID) {
     elements <- remDr$findElements("class", "_czm8crp")
     elements2 <- remDr$findElements("class", "_ktt9n8u")
     elements3 <- remDr$findElements("class", "_abw475")
+    element4 <- remDr$findElements("class", "_5twioja")
 
     if (length(elements2 %in% 1:3)) elements <- elements2
     if (length(elements3 %in% 1:3)) elements <- elements3
+    if (length(elements4 %in% 1:3)) elements <- elements4
   }
 
 
