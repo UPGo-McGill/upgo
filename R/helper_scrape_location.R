@@ -57,6 +57,18 @@ helper_scrape_location <- function(PID) {
     return(scrape_result)
   }
 
+  ### Deal with Luxe and Plus listings #########################################
+
+  if (!length(elements) %in% 1:3) {
+    if (str_detect(remDr$getCurrentUrl(), "luxury")) {
+      elements <- remDr$findElements("class", "_4mq26")
+    }
+
+    if (str_detect(remDr$getCurrentUrl(), "plus")) {
+      elements <- remDr$findElements("class", "_ylytgbo")
+    }
+  }
+
 
   ### If regular doesn't work, try _czm8crp and _ktt9n8u then regular again ####
 
@@ -71,16 +83,6 @@ helper_scrape_location <- function(PID) {
     if (length(elements4 %in% 1:3)) elements <- elements4
   }
 
-
-  ### Deal with Luxe and Plus listings #########################################
-
-  if (str_detect(remDr$getCurrentUrl(), "luxury")) {
-    elements <- remDr$findElements("class", "_4mq26")
-  }
-
-  if (str_detect(remDr$getCurrentUrl(), "plus")) {
-    elements <- remDr$findElements("class", "_ylytgbo")
-  }
 
 
   ### Convert elements to vector ###############################################
