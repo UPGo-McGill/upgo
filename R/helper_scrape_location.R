@@ -32,13 +32,11 @@ helper_scrape_location <- function(PID) {
   remDr$setImplicitWaitTimeout(5000)
 
 
-  ### Test title for missing listing and exit early if so ######################
+  ### Test URL for missing listing and exit early if so ########################
 
-  if (remDr$getTitle()[[1]] == "Anywhere \u00b7 Stays \u00b7 Airbnb") {
+  if (remDr$getCurrentUrl() == "https://www.airbnb.ca/s/homes") {
 
     scrape_result[1, 2] <- list("NO LISTING")
-
-    Sys.sleep()
 
     return(scrape_result)
   }
@@ -50,9 +48,9 @@ helper_scrape_location <- function(PID) {
   elements <- remDr$findElements("class", "_abw475")
 
 
-  ### Test title for missing listing again #####################################
+  ### Test URL for missing listing again #######################################
 
-  if (remDr$getTitle()[[1]] == "Anywhere \u00b7 Stays \u00b7 Airbnb") {
+  if (remDr$getCurrentUrl() == "https://www.airbnb.ca/s/homes") {
 
     scrape_result[1, 2] <- list("NO LISTING")
 

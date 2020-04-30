@@ -38,7 +38,7 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
 
   # Decide if remote connection is necessary
-  if (remote | daily_inactive | host_inactive | reviews | local == FALSE) {
+  if (remote | daily_inactive | host_inactive | reviews | !local) {
     con <<- RPostgres::dbConnect(
       RPostgres::Postgres(),
       host = "025wpgs.campus.mcgill.ca",
