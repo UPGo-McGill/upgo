@@ -34,7 +34,7 @@ helper_scrape_location <- function(PID) {
 
   ### Test URL for missing listing and exit early if so ########################
 
-  if (remDr$getCurrentUrl() == "https://www.airbnb.ca/s/homes") {
+  if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
 
     scrape_result[1, 2] <- list("NO LISTING")
 
@@ -50,7 +50,7 @@ helper_scrape_location <- function(PID) {
 
   ### Test URL for missing listing again #######################################
 
-  if (remDr$getCurrentUrl() == "https://www.airbnb.ca/s/homes") {
+  if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
 
     scrape_result[1, 2] <- list("NO LISTING")
 
