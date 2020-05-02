@@ -1,6 +1,6 @@
 #' Function to scrape location information from Airbnb listings
 #'
-#' \code{upgo_scrape_location_2} scrapes location (city, region and country) from
+#' \code{upgo_scrape_ab} scrapes location (city, region and country) from
 #' Airbnb listings.
 #'
 #' TKTK
@@ -31,8 +31,8 @@
 #' @export
 
 
-upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
-                                   quiet = FALSE) {
+upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
+                           quiet = FALSE) {
 
   ### Initialization ###########################################################
 
@@ -80,7 +80,7 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
   ### Start clusters and web drivers ###########################################
 
   cl <- makeCluster(cores)
-  future::plan(cluster, workers = cl, persistent = TRUE)
+  future::plan(future::cluster, workers = cl, persistent = TRUE)
   doFuture::registerDoFuture()
 
 
@@ -192,8 +192,8 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
           tryCatch({
             PIDs_to_scrape[[j]] %>%
-              helper_scrape_location() %>%
-              helper_scrape_location_parse_2()
+              helper_scrape_ab() %>%
+              helper_parse_ab()
             }, error = function(e) NULL)
           }
 
