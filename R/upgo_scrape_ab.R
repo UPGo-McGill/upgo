@@ -174,11 +174,41 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
   chunk_size <- 100
   scrape_rounds <- ceiling(length(PIDs) / chunk_size)
 
-  # Loop over the number of iterations
-  with_progress({
 
-    .upgo_env$pb <- progressor(along = PIDs)
-    .upgo_env$pb(0)
+  ## Loop with progress bar ----------------------------------------------------
+
+  if (!quiet) {
+
+    with_progress({
+
+      .upgo_env$pb <- progressor(along = PIDs)
+      .upgo_env$pb(0)
+
+      for (i in seq_len(scrape_rounds)) {
+
+        PIDs_to_scrape <-
+          PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
+
+        results_new <-
+          foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
+
+            .upgo_env$pb()
+
+            tryCatch({
+              PIDs_to_scrape[[j]] %>%
+                helper_scrape_ab() %>%
+                helper_parse_ab()
+            }, error = function(e) NULL)
+          }
+
+        results <- bind_rows(results, results_new)
+      }
+    })
+
+
+  ## Loop without progress bar -------------------------------------------------
+
+  } else {
 
     for (i in seq_len(scrape_rounds)) {
 
@@ -188,20 +218,17 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
       results_new <-
         foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
 
-          .upgo_env$pb()
-
           tryCatch({
             PIDs_to_scrape[[j]] %>%
               helper_scrape_ab() %>%
               helper_parse_ab()
-            }, error = function(e) NULL)
-          }
+          }, error = function(e) NULL)
+        }
 
       results <- bind_rows(results, results_new)
-
     }
+  }
 
-  })
 
 
   ### Clean up and prepare output ##############################################

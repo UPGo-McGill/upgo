@@ -574,7 +574,6 @@ helper_parse_cl <- function(.x, .y, city_name) {
 }
 
 
-
 #' Helper function to generate error Craigslist output
 #'
 #' @param .y A single Craigslist URL.
