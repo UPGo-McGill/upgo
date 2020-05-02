@@ -997,6 +997,24 @@ helper_parse_ab <- function(scrape_result) {
       content <- content[1:(length(content) - 1)]
     }
 
+    if (length(content) == 1) {
+
+      if (content %in% country_list) {
+        return(
+          scrape_result %>%
+            mutate(
+              city = NA_character_,
+              region = NA_character_,
+              country = content,
+              date = Sys.Date()
+            ) %>%
+            select(.data$property_ID, .data$city:.data$country, .data$raw,
+                   .data$date)
+        )
+      } else return(NULL)
+
+    }
+
     return(
       scrape_result %>%
         mutate(
