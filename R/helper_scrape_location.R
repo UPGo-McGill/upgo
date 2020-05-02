@@ -18,18 +18,40 @@ helper_scrape_location <- function(PID) {
 
   ### Initialize objects #######################################################
 
-  scrape_result <- tibble(property_ID = character(), raw = list())
-
+  scrape_result <-
+    tibble(property_ID = character(), raw = list(), note = character())
   scrape_result[1, 1] <- paste0("ab-", PID)
 
-  elements <- list()
 
+  ### Navigate to listing and verify it is loaded ##############################
 
-  ### Navigate to listing ######################################################
-
+  remDr$setImplicitWaitTimeout(0)
   remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID))
 
-  remDr$setImplicitWaitTimeout(5000)
+  load_check <- FALSE
+  iters <- 0
+
+  while (!load_check && iters <= 5) {
+
+    iters <- iters + 1
+
+    load_check <-
+      suppressMessages(
+        tryCatch({
+          # This element is only true once the page is loaded
+          remDr$findElement("xpath", '//*[@data-triggered = "true"]')
+          TRUE
+          }, error = function(e) {
+            # If the key element is loaded, wait one second then try again
+            Sys.sleep(1)
+            FALSE
+            }
+        ))
+    }
+
+  ### Return NULL if the listing hasn't loaded in 5 seconds ####################
+
+  if (!load_check) return(NULL)
 
 
   ### Test URL for missing listing and exit early if so ########################
@@ -37,6 +59,7 @@ helper_scrape_location <- function(PID) {
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
 
     scrape_result[1,]$raw <- list("NO LISTING")
+    scrape_result[1,]$note <- "no_listing"
 
     return(scrape_result)
   }
@@ -44,64 +67,127 @@ helper_scrape_location <- function(PID) {
 
   ### Try regular listing type #################################################
 
-  # This seems to be the new class
-  elements <- remDr$findElements("class", "_5twioja")
+  # This class is sometimes present at the top of listings
+  element_top <- remDr$findElements("class", "_5twioja")
 
+  if (length(element_top) > 0) {
 
-  ### Test URL for missing listing again #######################################
-
-  if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
-
-    scrape_result[1,]$raw <- list("NO LISTING")
-
-    return(scrape_result)
-  }
-
-  ### Deal with Luxe and Plus listings #########################################
-
-  if (!length(elements) %in% 1:3) {
-    if (str_detect(remDr$getCurrentUrl(), "luxury")) {
-      elements <- remDr$findElements("class", "_4mq26")
-    }
-
-    if (str_detect(remDr$getCurrentUrl(), "plus")) {
-      elements <- remDr$findElements("class", "_ylytgbo")
-    }
-  }
-
-
-  ### If regular doesn't work, try _czm8crp and _ktt9n8u then regular again ####
-
-  if (!length(elements) %in% 1:3) {
-    elements <- remDr$findElements("class", "_czm8crp")
-    elements2 <- remDr$findElements("class", "_ktt9n8u")
-    elements3 <- remDr$findElements("class", "_abw475")
-    element4 <- remDr$findElements("class", "_5twioja")
-
-    if (length(elements2 %in% 1:3)) elements <- elements2
-    if (length(elements3 %in% 1:3)) elements <- elements3
-    if (length(elements4 %in% 1:3)) elements <- elements4
-  }
-
-
-
-  ### Convert elements to vector ###############################################
-
-  if (length(elements) > 0) {
-    elements <-
-      map_chr(elements, ~{
+    element_top <-
+      map_chr(element_top, ~{
         .x$getElementAttribute("outerHTML")[[1]]
       })
+
+    element_top_processed <-
+      element_top %>%
+      str_extract('(?<=">).*(?=</a>)') %>%
+      str_replace("<span>", "") %>%
+      str_replace("</span>", "") %>%
+      str_split(", ") %>%
+      unlist()
+
+    if (length(element_top_processed) > 1) {
+      scrape_result[1,]$raw <- list(element_top)
+      scrape_result[1,]$note <- "top"
+
+      return(scrape_result)
+    }
   }
 
 
-  ### Allocate output and return ###############################################
+  # ### Deal with Luxe and Plus listings #########################################
+  #
+  # if (str_detect(remDr$getCurrentUrl(), "luxury")) {
+  #   elements2 <- remDr$findElements("class", "_4mq26")
+  #   }
+  #
+  # if (str_detect(remDr$getCurrentUrl(), "plus")) {
+  #   elements2 <- remDr$findElements("class", "_ylytgbo")
+  #   }
+  #
+  #
+  ### Try _abw475 ##############################################################
 
-  if (length(elements) > 0) {
-    scrape_result[1,2] <- list(list(elements))
+  element_bottom <- remDr$findElements("class", "_abw475")
+
+  if (length(element_bottom) %in% 1:3) {
+
+    element_bottom <-
+      map_chr(element_bottom, ~{
+        .x$getElementAttribute("outerHTML")[[1]]
+      })
+
+    scrape_result[1,]$raw <- list(element_bottom)
+    scrape_result[1,]$note <- "_abw475"
+
+    return(scrape_result)
+
   }
 
-  return(scrape_result)
+
+  ### Try _s1tlw0m #############################################################
+
+  element_bottom <- remDr$findElements("class", "_s1tlw0m")
+
+  if (length(element_bottom) > 0) {
+
+    element_bottom <-
+      map_chr(element_bottom, ~{
+        .x$getElementAttribute("outerHTML")[[1]]
+      })
+
+    scrape_result[1,]$raw <- list(element_bottom)
+    scrape_result[1,]$note <- "_s1tlw0m"
+
+    return(scrape_result)
+
+  }
+
+
+  ### Try _czm8crp #############################################################
+
+  element_bottom <- remDr$findElements("class", "_czm8crp")
+
+  if (length(element_bottom) < 0) {
+
+    element_bottom <-
+      map_chr(element_bottom, ~{
+        .x$getElementAttribute("outerHTML")[[1]]
+      })
+
+    scrape_result[1,]$raw <- list(element_bottom)
+    scrape_result[1,]$note <- "_czm8crp"
+
+
+  }
+
+
+  # elements3 <- remDr$findElements("class", "_ktt9n8u")
+  # elements4 <- remDr$findElements("class", "_abw475")
+  #
+  #   if (length(elements2 %in% 1:3)) elements <- elements2
+  #   if (length(elements3 %in% 1:3)) elements <- elements3
+  #   if (length(elements4 %in% 1:3)) elements <- elements4
+
+#
+#   ### Convert elements to vector ###############################################
+#
+#   if (length(elements) > 0) {
+#     elements <-
+#       map_chr(elements4, ~{
+#         .x$getElementAttribute("outerHTML")[[1]]
+#       })
+#   }
+#
+#
+#   ### Allocate output and return ###############################################
+#
+#   if (length(elements) > 0) {
+#     scrape_result[1,2] <- list(list(elements))
+#   }
+#
+#   return(scrape_result)
+
+  return(NULL)
 
 }
 
@@ -219,6 +305,22 @@ helper_scrape_location_parse <- function(results) {
 
   ### Process standard results #################################################
 
+  one_length <-
+    one_length %>%
+    mutate(
+      city = NA_character_,
+      region = NA_character_,
+      country = map_chr(.data$raw, ~{
+        .x %>%
+          str_extract('(?<=">).*(?=</a>)') %>%
+          str_replace("<span>", "") %>%
+          str_replace("</span>", "")
+      }),
+      country = dplyr::if_else(.data$country %in% country_list, .data$country,
+                               "ONE NEED TO CHECK"),
+      date = Sys.Date()) %>%
+    select(.data$property_ID, .data$city:.data$country, .data$raw, .data$date)
+
   three_length <-
     three_length %>%
     mutate(
@@ -257,22 +359,6 @@ helper_scrape_location_parse <- function(results) {
       }),
       date = Sys.Date()
     ) %>%
-    select(.data$property_ID, .data$city:.data$country, .data$raw, .data$date)
-
-  one_length <-
-    one_length %>%
-    mutate(
-      city = NA_character_,
-      region = NA_character_,
-      country = map_chr(.data$raw, ~{
-        .x %>%
-          str_extract('(?<=">).*(?=</a>)') %>%
-          str_replace("<span>", "") %>%
-          str_replace("</span>", "")
-        }),
-      country = dplyr::if_else(.data$country %in% country_list, .data$country,
-                        "ONE NEED TO CHECK"),
-      date = Sys.Date()) %>%
     select(.data$property_ID, .data$city:.data$country, .data$raw, .data$date)
 
   high_length <-

@@ -4,17 +4,18 @@
 #' country) from a single Airbnb listing and forwards to the calling function
 #' for further processing.
 #'
-#' @param result An interim result from helper_scrape_location.
+#' @param scrape_result A one-row data frame produced as an interim result from
+#' \code{helper_scrape_location}.
 #' @importFrom dplyr bind_rows case_when filter last mutate select
 #' @importFrom tibble tibble
 #' @importFrom stringr str_detect str_extract str_replace str_split
 #' @importFrom purrr map map_chr map_int map_lgl
 
-helper_scrape_location_parse_2 <- function(result) {
+helper_scrape_location_parse_2 <- function(scrape_result) {
 
   ### Exit early on NULL #######################################################
 
-  if (is.null(result)) return(NULL)
+  if (is.null(scrape_result)) return(NULL)
 
 
   ### Country list for checking ################################################
@@ -72,10 +73,10 @@ helper_scrape_location_parse_2 <- function(result) {
 
   ### Process missing ##########################################################
 
-  if (unlist(result$raw) == "NO LISTING") {
+  if (scrape_result$note == "no_listing") {
 
     return(
-      result %>%
+      scrape_result %>%
         mutate(city = NA_character_,
                region = NA_character_,
                country = NA_character_,
@@ -88,7 +89,7 @@ helper_scrape_location_parse_2 <- function(result) {
 
   ### Process Luxe #############################################################
 
-  if (sum(str_detect(unlist(result$raw), "_4mq26")) > 0) {
+  if (scrape_result$note == "luxe") {
 
     US_states <-
       c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
@@ -99,7 +100,7 @@ helper_scrape_location_parse_2 <- function(result) {
 
     return(
 
-      result %>%
+      scrape_result %>%
         mutate(
           location = map(.data$raw, ~{
             .x[str_detect(.x, ",")] %>%
@@ -154,10 +155,10 @@ helper_scrape_location_parse_2 <- function(result) {
 
   ### Process Plus #############################################################
 
-  if (sum(str_detect(unlist(result$raw), "_ylytgbo")) > 0) {
+  if (scrape_result$note == "plus") {
 
     return(
-      result %>%
+      scrape_result %>%
         mutate(location = map(.data$raw, ~{
           .x %>%
             str_extract('(?=>).+(?=<)') %>%
@@ -179,12 +180,103 @@ helper_scrape_location_parse_2 <- function(result) {
   }
 
 
-  ### Process 3-length results #################################################
+  ### Process element_top results ##############################################
 
-  if (length(result$raw[[1]]) == 3) {
+  if (scrape_result$note == "top") {
+
+    content <-
+      scrape_result$raw[[1]] %>%
+      str_extract('(?<=">).*(?=</a>)') %>%
+      str_replace("<span>", "") %>%
+      str_replace("</span>", "") %>%
+      str_split(", ") %>%
+      unlist()
+
+    # Deal with Bonaire comma
+    if (content[[length(content)]] == "Sint Eustatius and Saba") {
+      content[[length(content) - 1]] <- "Bonaire, Sint Eustatius and Saba"
+      content <- content[1:(length(content) - 1)]
+    }
 
     return(
-      result %>%
+      scrape_result %>%
+        mutate(
+          city = content[[1]],
+          region = if_else(length(content) == 3, content[[2]], NA_character_),
+          country = content[[length(content)]],
+          date = Sys.Date()
+        ) %>%
+        select(.data$property_ID, .data$city:.data$country, .data$raw,
+               .data$date)
+    )
+    }
+
+
+  ### Process _s1tlw0m results #################################################
+
+  if (scrape_result$note == "_s1tlw0m") {
+
+    content <-
+      # The valid element seems to be the only one with a comma
+      scrape_result$raw[[1]][str_detect(scrape_result$raw[[1]], ",")] %>%
+      str_extract('(?<=_s1tlw0m..).*(?=<)') %>%
+      str_split(", ") %>%
+      unlist()
+
+    # Deal with Bonaire comma
+    if (content[[length(content)]] == "Sint Eustatius and Saba") {
+      content[[length(content) - 1]] <- "Bonaire, Sint Eustatius and Saba"
+      content <- content[1:(length(content) - 1)]
+    }
+
+    return(
+      scrape_result %>%
+        mutate(
+          city = content[[1]],
+          region = if_else(length(content) == 3, content[[2]], NA_character_),
+          country = content[[length(content)]],
+          date = Sys.Date()
+        ) %>%
+        select(.data$property_ID, .data$city:.data$country, .data$raw,
+               .data$date)
+    )
+  }
+
+
+  ### Process _czm8crp results #################################################
+
+  if (scrape_result$note == "_czm8crp") {
+
+    return(
+      scrape_result %>%
+        mutate(
+          location = map(.data$raw, ~{
+            .x[str_detect(.x, "place is located in")] %>%
+              str_extract("(?<=located in ).*(?=.</div)") %>%
+              str_split(", ") %>%
+              unlist()
+          }),
+          city = map_chr(.data$location, ~{
+            if (length(.x) >= 2) .x[1] else NA_character_
+          }),
+          region = map_chr(.data$location, ~{
+            if (length(.x) == 3) .x[2] else NA_character_
+          }),
+          country = map_chr(.data$location, ~{
+            if (length(.x) >= 1) last(.x) else "PARSE ERROR TO CHECK"
+          }),
+          date = Sys.Date()) %>%
+        select(.data$property_ID, .data$city:.data$country, .data$raw,
+               .data$date)
+    )
+  }
+
+  ### Process 3-length results #################################################
+
+  if (length(scrape_result$raw[[1]]) == 3) {
+
+    return(
+      scrape_result %>%
         mutate(
           city = map_chr(.data$raw, ~{
             .x[1] %>%
@@ -211,36 +303,10 @@ helper_scrape_location_parse_2 <- function(result) {
 
   ### Process 2-length results #################################################
 
-  if (length(result$raw[[1]]) == 2) {
+  if (length(scrape_result$raw[[1]]) == 2) {
 
     return(
-      result %>%
-        mutate(
-          city = map_chr(.data$raw, ~{
-            .x[1] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
-          }),
-          region = NA_character_,
-          country = map_chr(.data$raw, ~{
-            .x[2] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
-          }),
-          date = Sys.Date()
-        ) %>%
-        select(.data$property_ID, .data$city:.data$country, .data$raw,
-               .data$date)
-    )
-  }
-
-
-  ### Process 1-length results #################################################
-
-  if (length(result$raw[[1]]) == 1) {
-
-    return(
-      result %>%
+      scrape_result %>%
         mutate(
           city = map_chr(.data$raw, ~{
             .x[1] %>%
@@ -263,10 +329,10 @@ helper_scrape_location_parse_2 <- function(result) {
 
   ### Process long-length results ##############################################
 
-  if (length(result$raw[[1]]) > 3) {
+  if (length(scrape_result$raw[[1]]) > 3) {
 
     return(
-      high_length %>%
+      scrape_result %>%
         mutate(
           location = map(.data$raw, ~{
             .x[str_detect(.x, "place is located in")] %>%

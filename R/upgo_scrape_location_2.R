@@ -11,9 +11,6 @@
 #' supplied, this must be at least as long as the number of cores.
 #' @param cores A positive integer scalar. How many processing cores should be
 #' used to scrape?
-#' @param slow_mode A logical scalar. Should the function insert a pause into
-#' the scraping routine to increase the chances of a positive match, at the cost
-#' of a significant slowdown?
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with property_ID, city, region, and country, along with the
@@ -35,7 +32,7 @@
 
 
 upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
-                                   slow_mode = FALSE, quiet = FALSE) {
+                                   quiet = FALSE) {
 
   ### Initialization ###########################################################
 
@@ -61,9 +58,11 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
   on.exit({
 
-    if (nrow(property %>%
-             filter(!.data$property_ID %in% results$property_ID)) > 0 &
-        !quiet) {
+    results <- bind_rows(results, results_HA)
+
+    total_time <- Sys.time() - start_time
+
+    if (!quiet) {
       message("Scraping incomplete. ", nrow(results), " listings scraped in ",
               substr(total_time, 1, 5), " ",
               attr(total_time, "units"), ". ",
@@ -71,11 +70,6 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
                      filter(!.data$property_ID %in% results$property_ID)),
               " listings not scraped.")
 
-    } else if (!quiet) {
-      message(crayon::bold(cyan(glue(
-        "Scraping complete. {nrow(results)} listings scraped in ",
-        "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."
-      ))))
     }
 
     return(results)
@@ -85,7 +79,12 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
   ### Start clusters and web drivers ###########################################
 
-  (cl <- cores %>% makeCluster()) %>% registerDoParallel()
+  cl <- makeCluster(cores)
+  future::plan(cluster, workers = cl, persistent = TRUE)
+  doFuture::registerDoFuture()
+
+
+  ## Start up with no proxies --------------------------------------------------
 
   if (missing(proxies)) {
     clusterEvalQ(cl, {
@@ -100,17 +99,19 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
       remDr$open()
     })
+
+
+  ## Start up with proxies -----------------------------------------------------
+
   } else {
 
-    proxy_reps <- ceiling(cores/length(proxies))
+    proxy_reps <- ceiling(cores / length(proxies))
     proxies <- rep(proxies, proxy_reps)[seq_len(cores)]
     proxies <- paste0("--proxy-server=", proxies)
 
     if (!quiet) {
       message(silver(glue("Scraping with {cores} proxies.")))
     }
-
-    # scrape_rate <- 0
 
     clusterApply(cl, proxies, function(x) {proxy <<- x})
 
@@ -127,7 +128,6 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
       remDr$open()
     })
-
 
   }
 
@@ -162,33 +162,46 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
   PIDs <-
     property %>%
     filter(!.data$property_ID %in% results$property_ID) %>%
-    slice(1:chunk_size) %>%
     pull(.data$property_ID) %>%
     substr(4, 15)
 
-  if (!quiet) handler_upgo("Scraping listing")
+  # Set up progress bar
+  if (!quiet) {
+    handler_upgo("Scraping listing")
+  }
 
-  # Do minimum possible work inside parallel processes
-  with_progress(
-    results <-
-    foreach(i = seq_along(PIDs)) %dopar% {
-      if (!quiet) .upgo_env$pb()
-      tryCatch(helper_scrape_location(PIDs[i]),
-               # Aggressive error handling to keep the function from exiting
-               error = function(e) NULL) %>%
-        helper_scrape_location_parse_2()
-      }
-    )
+  # Get number of iterations
+  chunk_size <- 100
+  scrape_rounds <- ceiling(length(PIDs) / chunk_size)
 
+  # Loop over the number of iterations
+  with_progress({
 
-    ### Parse new results and combine with main results object #################
+    .upgo_env$pb <- progressor(along = PIDs)
+    .upgo_env$pb(0)
 
-    # Remove empty rows and parse results
-    results <-
-      results %>%
-      bind_rows() %>%
-      filter(.data$property_ID %in% property$property_ID, !is.na(.data$raw)) %>%
-      helper_scrape_location_parse()
+    for (i in seq_len(scrape_rounds)) {
+
+      PIDs_to_scrape <-
+        PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
+
+      results_new <-
+        foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
+
+          .upgo_env$pb()
+
+          tryCatch({
+            PIDs_to_scrape[[j]] %>%
+              helper_scrape_location() %>%
+              helper_scrape_location_parse_2()
+            }, error = function(e) NULL)
+          }
+
+      results <- bind_rows(results, results_new)
+
+    }
+
+  })
 
 
   ### Clean up and prepare output ##############################################
@@ -206,25 +219,14 @@ upgo_scrape_location_2 <- function(property, proxies = NULL, cores = 1L,
 
   total_time <- Sys.time() - start_time
 
-  if (nrow(property %>%
-           filter(!.data$property_ID %in% results$property_ID)) > 0 &
-      !quiet) {
-    message("Scraping incomplete. ", nrow(results), " listings scraped in ",
-            substr(total_time, 1, 5), " ",
-            attr(total_time, "units"), ". ",
-            nrow(property %>%
-                   filter(!.data$property_ID %in% results$property_ID)),
-            " listings not scraped.")
-
-  } else if (!quiet) {
-    message(crayon::bold(cyan(glue(
+  if (!quiet) {
+    message(crayon::bold(crayon::cyan(glue(
       "Scraping complete. {nrow(results)} listings scraped in ",
       "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."
     ))))
   }
 
-  # Delete temporary results object once it's clear the real object is safe
-  rm(.temp_results, envir = .GlobalEnv)
+  on.exit()
 
   # Satisfy R CMD check
   proxy <- NULL

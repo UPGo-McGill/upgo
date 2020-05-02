@@ -47,7 +47,8 @@ handler_upgo <- function(message) {
   handlers(
     handler_progress(
       format = silver(italic(paste0(
-        message, " :current of :total [:bar] :percent, ETA: :eta"))),
+        message,
+        " :current of :total (:tick_rate/s) [:bar] :percent, ETA: :eta"))),
       show_after = 0
     ))
 }
