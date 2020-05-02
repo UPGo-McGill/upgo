@@ -718,6 +718,8 @@ helper_scrape_ab <- function(PID) {
     scrape_result[1,]$raw <- list(element_bottom)
     scrape_result[1,]$note <- "luxe"
 
+    return(scrape_result)
+
   }
 
   if (str_detect(remDr$getCurrentUrl(), "plus")) {
@@ -727,6 +729,8 @@ helper_scrape_ab <- function(PID) {
 
     scrape_result[1,]$raw <- list(element_bottom)
     scrape_result[1,]$note <- "plus"
+
+    return(scrape_result)
 
   }
 
