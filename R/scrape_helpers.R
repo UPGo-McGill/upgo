@@ -708,17 +708,29 @@ helper_scrape_ab <- function(PID) {
   }
 
 
-  # ### Deal with Luxe and Plus listings #########################################
-  #
-  # if (str_detect(remDr$getCurrentUrl(), "luxury")) {
-  #   elements2 <- remDr$findElements("class", "_4mq26")
-  #   }
-  #
-  # if (str_detect(remDr$getCurrentUrl(), "plus")) {
-  #   elements2 <- remDr$findElements("class", "_ylytgbo")
-  #   }
-  #
-  #
+  ### Deal with Luxe and Plus listings #########################################
+
+  if (str_detect(remDr$getCurrentUrl(), "luxury")) {
+    element_bottom <-
+      remDr$findElements("class", "_4mq26") %>%
+      map_chr(~.x$getElementAttribute("outerHTML")[[1]])
+
+    scrape_result[1,]$raw <- list(element_bottom)
+    scrape_result[1,]$note <- "luxe"
+
+  }
+
+  if (str_detect(remDr$getCurrentUrl(), "plus")) {
+    element_bottom <-
+      remDr$findElements("class", "_ylytgbo") %>%
+      map_chr(~.x$getElementAttribute("outerHTML")[[1]])
+
+    scrape_result[1,]$raw <- list(element_bottom)
+    scrape_result[1,]$note <- "plus"
+
+  }
+
+
   ### Try _abw475 ##############################################################
 
   element_bottom <- remDr$findElements("class", "_abw475")
@@ -775,31 +787,7 @@ helper_scrape_ab <- function(PID) {
   }
 
 
-  # elements3 <- remDr$findElements("class", "_ktt9n8u")
-  # elements4 <- remDr$findElements("class", "_abw475")
-  #
-  #   if (length(elements2 %in% 1:3)) elements <- elements2
-  #   if (length(elements3 %in% 1:3)) elements <- elements3
-  #   if (length(elements4 %in% 1:3)) elements <- elements4
-
-  #
-  #   ### Convert elements to vector ###############################################
-  #
-  #   if (length(elements) > 0) {
-  #     elements <-
-  #       map_chr(elements4, ~{
-  #         .x$getElementAttribute("outerHTML")[[1]]
-  #       })
-  #   }
-  #
-  #
-  #   ### Allocate output and return ###############################################
-  #
-  #   if (length(elements) > 0) {
-  #     scrape_result[1,2] <- list(list(elements))
-  #   }
-  #
-  #   return(scrape_result)
+  ### If nothing else works, return NULL #######################################
 
   return(NULL)
 
