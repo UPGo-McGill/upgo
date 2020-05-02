@@ -699,7 +699,7 @@ helper_scrape_ab <- function(PID) {
       str_split(", ") %>%
       unlist()
 
-    if (length(element_top_processed) > 1) {
+    if (length(element_top_processed) > 0) {
       scrape_result[1,]$raw <- list(element_top)
       scrape_result[1,]$note <- "top"
 
