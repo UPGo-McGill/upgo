@@ -43,13 +43,15 @@ helper_urls_cl <- function(city_name) {
 
   url_list <-
     foreach(i = seq_len(pages)) %do_upgo% {
-      xml2::read_html(httr::GET(paste0(
-        "https://", city_name, ".craigslist.org/search/apa?s=",
-        120 * (i - 1), "&lang=en&cc=us"))) %>%
-        rvest::html_nodes(".result-row") %>%
-        xml2::xml_children() %>%
-        rvest::html_attr("href") %>%
-        na.omit()
+      tryCatch({
+        xml2::read_html(httr::GET(paste0(
+          "https://", city_name, ".craigslist.org/search/apa?s=",
+          120 * (i - 1), "&lang=en&cc=us"))) %>%
+          rvest::html_nodes(".result-row") %>%
+          xml2::xml_children() %>%
+          rvest::html_attr("href") %>%
+          na.omit()
+      }, error = function(e) NULL)
     }
 
 
@@ -163,14 +165,15 @@ helper_urls_kj <- function(city_name, short_long) {
     url_list_2 <-
       foreach (i = seq_len(pages)) %do_upgo% {
 
-        xml2::read_html(httr::GET(paste0(
-          url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]], url_end,
-          "&sort=dateAsc"))) %>%
-          rvest::html_nodes(xpath = '//*[@class="title"]') %>%
-          xml2::xml_children() %>%
-          rvest::html_attr("href") %>%
-          na.omit()
-
+        tryCatch({
+          xml2::read_html(httr::GET(paste0(
+            url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]], url_end,
+            "&sort=dateAsc"))) %>%
+            rvest::html_nodes(xpath = '//*[@class="title"]') %>%
+            xml2::xml_children() %>%
+            rvest::html_attr("href") %>%
+            na.omit()
+        }, error = function(e) NULL)
       }
 
     url_list <-
