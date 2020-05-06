@@ -1,6 +1,17 @@
-#' UPGo package environment
+#' Helper function to check for package requirement
+#'
+#' \code{helper_require} checks for a package and stops the function if the
+#' package is not found.
+#' @param pkg_name A character string giving the name of a package.
+#' @return An error message if the package isn't found.
 
-.upgo_env <- rlang::env()
+helper_require <- function(pkg_name) {
+
+  if (!requireNamespace(pkg_name, quietly = TRUE)) {
+    stop(glue::glue("Package \"{pkg_name}\" needed for this function to work."),
+         call. = FALSE)
+  }
+}
 
 
 #' Helper function to characterize future plan
@@ -8,9 +19,10 @@
 #' \code{helper_plan} parses the current \code{future::plan} for display in
 #' progress messages.
 #' @return A character string reporting the current plan.
-#' @importFrom future nbrOfWorkers plan
 
 helper_plan <- function() {
+
+  helper_require("future")
 
   tryCatch({
     workers_number <-
@@ -64,6 +76,9 @@ handler_upgo <- function(message) {
 
 check_ip <- function() {
 
+  helper_require("rvest")
+  helper_require("xml2")
+
   xml2::read_html(httr::GET("https://whatismyipaddress.com")) %>%
     rvest::html_node(xpath = '//*[@id = "ipv4"]') %>%
     rvest::html_text()
@@ -82,6 +97,8 @@ check_ip <- function() {
 #' @export
 
 `%do_upgo%` <- function(obj, ex) {
+
+  helper_require("httr")
 
   # If .upgo_env isn't found, behave like standard foreach %dopar%
   if (!exists(".upgo_env")) return(foreach::`%dopar%`(obj, ex))

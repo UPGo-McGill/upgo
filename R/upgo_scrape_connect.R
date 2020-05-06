@@ -11,10 +11,11 @@
 #' with Selenium.
 #' @return The function returns a connection object, which it assigns to `rD` in
 #' the global environment.
-#' @import RSelenium
 #' @export
 
 upgo_scrape_connect <- function(chrome = "81.0.4044.69") {
+
+  helper_require("RSelenium")
 
   rD <- NULL
 
@@ -22,8 +23,15 @@ upgo_scrape_connect <- function(chrome = "81.0.4044.69") {
     args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
     w3c = FALSE))
 
-  rD <<- rsDriver(port = 4444L, browser = "chrome",
-                  chromever = chrome, extraCapabilities = eCaps)
+  message(crayon::silver(glue::glue("Initializing Selenium server.")))
+
+  assign("rD",
+         RSelenium::rsDriver(port = 4444L,
+                             browser = "chrome",
+                             chromever = chrome,
+                             extraCapabilities = eCaps,
+                             verbose = FALSE),
+         envir = .upgo_env)
 }
 
 
@@ -32,26 +40,24 @@ upgo_scrape_connect <- function(chrome = "81.0.4044.69") {
 #' \code{upgo_scrape_disconnect} closes a Selenium server and removes the
 #' connection object from the global environment.
 #'
-#' This function closes any active Selenium server currently assigned to the
-#' object `rD`, any web driver currently assigned to the object `remDr`,
-#' removes both objects, and performs garbage collection on memory, to ensure
-#' that subsequent scraping connections will be made successfully.
+#' This function closes any active Selenium server and any web driver currently
+#' assigned to the object `remDr`, removes both objects, and performs garbage
+#' collection on memory, to ensure #' that subsequent scraping connections will
+#' be made successfully.
 #'
-#' @param connection A symbol corresponding to the open connection object.
 #' @return The function returns no output, but closes an open Selenium server
 #' and performs associated cleanup.
-#' @import RSelenium
 #' @export
 
-upgo_scrape_disconnect <- function(connection = rD) {
+upgo_scrape_disconnect <- function() {
 
-  rD$server$stop()
+  helper_require("RSelenium")
 
-  if (exists("remDr")) rm(remDr, envir = .GlobalEnv)
+  if (exists("rD", envir = .upgo_env)) .upgo_env$rD$server$stop()
 
-  rm(rD, envir = .GlobalEnv)
+  if (exists("remDr")) rm("remDr", envir = .GlobalEnv)
 
-  rD <- remDr <- NULL
+  rm("rD", envir = .upgo_env)
 
   gc()
 

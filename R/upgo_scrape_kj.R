@@ -20,18 +20,16 @@
 #' @importFrom crayon bold cyan italic silver
 #' @importFrom dplyr %>% arrange bind_rows if_else
 #' @importFrom glue glue
-#' @importFrom httr GET set_config use_proxy
-#' @importFrom progress progress_bar
-#' @importFrom purrr map map2_dfr
-#' @importFrom rvest html_node html_nodes html_text
 #' @importFrom stringr str_extract
-#' @importFrom xml2 read_html write_html
 #' @export
 
 upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
                            recovery = FALSE, proxies = NULL, quiet = FALSE) {
 
   ### SETUP ####################################################################
+
+  helper_require("rvest")
+
 
   ## Initialize variables ------------------------------------------------------
 
@@ -40,7 +38,9 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     .temp_listings <- .temp_results <- .temp_finished_flag <- NULL
 
   # Prepare for parallel processing
-  doFuture::registerDoFuture()
+  if(requireNamespace("future", quietly = TRUE)) {
+    doFuture::registerDoFuture()
+  }
 
   # Put null progress bar in .upgo_env
   .upgo_env$pb <-progressor(0)
@@ -80,7 +80,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     url_list <- vector("list", length(city))
     listings <- vector("list", length(city))
     results <- vector("list", length(city))
-    finished_flag <- map(seq_along(city), ~FALSE)
+    finished_flag <- purrr::map(seq_along(city), ~FALSE)
 
   }
 
@@ -284,20 +284,40 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
     start_time <- Sys.time()
 
-    if (!quiet) {
-      with_progress({
-        .upgo_env$pb <- progressor(along = listings[[n]])
+    if (requireNamespace("future", quietly = TRUE)) {
 
+      if (!quiet) {
+        with_progress({
+          .upgo_env$pb <- progressor(along = listings[[n]])
+
+          results[[n]] <-
+            furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
+              .upgo_env$pb()
+              helper_parse_kj(.x, .y, city_name)
+            })})
+
+      } else {
         results[[n]] <-
-          furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
-            .upgo_env$pb()
-            helper_parse_kj(.x, .y, city_name)
-          })})
-
+          furrr::future_map2_dfr(listings[[n]], url_list[[n]], helper_parse_kj,
+                                 city_name)
+      }
     } else {
-      results[[n]] <-
-        furrr::future_map2_dfr(listings[[n]], url_list[[n]], helper_parse_kj,
-                               city_name)
+
+      if (!quiet) {
+        with_progress({
+          .upgo_env$pb <- progressor(along = listings[[n]])
+
+          results[[n]] <-
+            purrr::map2_dfr(listings[[n]], url_list[[n]], ~{
+              .upgo_env$pb()
+              helper_parse_kj(.x, .y, city_name)
+            })})
+
+      } else {
+        results[[n]] <-
+          purrr::map2_dfr(listings[[n]], url_list[[n]], helper_parse_kj,
+                                 city_name)
+      }
     }
 
 

@@ -4,10 +4,7 @@
 \alias{upgo_scrape_disconnect}
 \title{Function to close Selenium server after completing webscraping}
 \usage{
-upgo_scrape_disconnect(connection = rD)
-}
-\arguments{
-\item{connection}{A symbol corresponding to the open connection object.}
+upgo_scrape_disconnect()
 }
 \value{
 The function returns no output, but closes an open Selenium server
@@ -18,8 +15,8 @@ and performs associated cleanup.
 connection object from the global environment.
 }
 \details{
-This function closes any active Selenium server currently assigned to the
-object `rD`, any web driver currently assigned to the object `remDr`,
-removes both objects, and performs garbage collection on memory, to ensure
-that subsequent scraping connections will be made successfully.
+This function closes any active Selenium server and any web driver currently
+assigned to the object `remDr`, removes both objects, and performs garbage
+collection on memory, to ensure #' that subsequent scraping connections will
+be made successfully.
 }

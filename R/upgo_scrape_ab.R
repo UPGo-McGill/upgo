@@ -16,23 +16,25 @@
 #' @return A table with property_ID, city, region, and country, along with the
 #' raw strings used to identify the location and the date on which the scrape
 #' was performed.
-#' @import doParallel
 #' @import foreach
-#' @import RSelenium
 #' @importFrom crayon cyan silver
-#' @importFrom dplyr arrange bind_rows filter last pull slice
+#' @importFrom dplyr arrange bind_rows filter last pull slice tibble
 #' @importFrom glue glue
-#' @importFrom parallel clusterApply clusterCall clusterEvalQ makeCluster
 #' @importFrom purrr map_chr
-#' @importFrom tibble tibble
-#' @importFrom stringr str_detect str_extract str_extract_all str_replace
-#' @importFrom stringr str_split str_starts
-#' @importFrom utils flush.console
+#' @importFrom stringr str_starts
 #' @export
 
 
 upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
                            quiet = FALSE) {
+
+  ### Check for necessary packages #############################################
+
+  helper_require("doFuture")
+  helper_require("future")
+  helper_require("parallel")
+  helper_require("RSelenium")
+
 
   ### Initialization ###########################################################
 
@@ -77,9 +79,14 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
   })
 
 
+  ### Start Selenium server if it is not already running #######################
+
+  if (!exists("rD", envir = .upgo_env)) upgo_scrape_connect()
+
+
   ### Start clusters and web drivers ###########################################
 
-  cl <- makeCluster(cores)
+  cl <- parallel::makeCluster(cores)
   future::plan(future::cluster, workers = cl, persistent = TRUE)
   doFuture::registerDoFuture()
 
@@ -87,7 +94,7 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
   ## Start up with no proxies --------------------------------------------------
 
   if (missing(proxies)) {
-    clusterEvalQ(cl, {
+    parallel::clusterEvalQ(cl, {
       eCaps <- list(chromeOptions = list(
         args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
         w3c = FALSE
@@ -113,9 +120,9 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
       message(silver(glue("Scraping with {cores} proxies.")))
     }
 
-    clusterApply(cl, proxies, function(x) {proxy <<- x})
+    parallel::clusterApply(cl, proxies, function(x) {proxy <<- x})
 
-    clusterEvalQ(cl, {
+    parallel::clusterEvalQ(cl, {
       eCaps <- list(chromeOptions = list(
         args = c('--headless', '--disable-gpu', '--window-size=1280,800',
                  proxy),
@@ -234,12 +241,9 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
   ### Clean up and prepare output ##############################################
 
   # Shut down browsers
-  clusterEvalQ(cl, {
+  parallel::clusterEvalQ(cl, {
     remDr$close()
   })
-
-  # Stop parallel cluster
-  doParallel::stopImplicitCluster()
 
   # Rbind HA listings into scraped output
   results <- bind_rows(results, results_HA)

@@ -14,6 +14,3 @@ helper_scrape_ab(PID)
 country) from a single Airbnb listing and forwards to the calling function
 for further processing.
 }
-\details{
-TKTK
-}
