@@ -38,12 +38,12 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     .temp_listings <- .temp_results <- .temp_finished_flag <- NULL
 
   # Prepare for parallel processing
-  if(requireNamespace("future", quietly = TRUE)) {
+  if(requireNamespace("doFuture", quietly = TRUE)) {
     doFuture::registerDoFuture()
   }
 
   # Put null progress bar in .upgo_env
-  .upgo_env$pb <-progressor(0)
+  .upgo_env$pb <- progressor(0)
 
 
   ## Validate city argument ----------------------------------------------------

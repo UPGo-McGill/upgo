@@ -22,22 +22,18 @@ helper_require <- function(pkg_name) {
 
 helper_plan <- function() {
 
-  helper_require("future")
+  if (requireNamespace("future", quietly = TRUE)) {
 
-  tryCatch({
-    workers_number <-
-      future::nbrOfWorkers()
+    tryCatch({
+      workers_number <- future::nbrOfWorkers()
+      workers_noun <- if_else(workers_number == 1, "process", "processes")
+      cluster_type <-
+        if_else("remote" %in% class(future::plan()), "remote", "local")
+      paste0(workers_number, " ", cluster_type, " ", workers_noun)
+      },
+      error = function(e) "1 local process")
 
-    workers_noun <-
-      if_else(workers_number == 1, "process", "processes")
-
-    cluster_type <-
-      if_else("remote" %in% class(future::plan()), "remote", "local")
-
-    paste0(workers_number, " ", cluster_type, " ", workers_noun)
-  },
-  error = function(e) "1 local process"
-  )
+  } else return("1 local process")
 }
 
 
@@ -77,7 +73,6 @@ handler_upgo <- function(message) {
 check_ip <- function() {
 
   helper_require("rvest")
-  helper_require("xml2")
 
   xml2::read_html(httr::GET("https://whatismyipaddress.com")) %>%
     rvest::html_node(xpath = '//*[@id = "ipv4"]') %>%
