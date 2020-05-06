@@ -9,22 +9,23 @@ gg_bbox(geom, x1 = 0, x2 = 1, y1 = 0, y2 = 1, ...)
 \arguments{
 \item{geom}{An sf table whose bounding box will be used for ggplot.}
 
-\item{x1}{TKTK}
+\item{x1}{The left boundary of the bounding box.}
 
-\item{x2}{TKTK}
+\item{x2}{The right boundary of the bounding box.}
 
-\item{y1}{TKTK}
+\item{y1}{The top boundary of the bounding box.}
 
-\item{y2}{TKTK}
+\item{y2}{The bottom boundary of the bounding box.}
 
-\item{...}{TKTK}
+\item{...}{Additional arguments to be passed to coord_sf.}
 }
 \value{
-TKTK.
+A coord_sf call which can be inserted into a ggplot stack.
 }
 \description{
-\code{gg_bbox} TKTK.
+\code{gg_bbox} takes an sf object and uses its bounding box for a ggplot.
 }
 \details{
-A function for TKTK.
+A function for manually specifying the bounding box of a ggplot. It is a
+convenience wrapper around \code{ggplot2::coord_sf}.
 }

@@ -41,25 +41,26 @@
 #' @importFrom dplyr %>% full_join group_by mutate summarize summarize_at
 #' @importFrom purrr reduce
 #' @importFrom rlang .data :=
-#' @importFrom sf st_area st_crs st_drop_geometry st_intersection st_transform
 #' @export
 
 st_intersect_summarize <- function(data, destination, population,
                                    group_vars = NULL, count_vars = NULL,
                                    mean_vars = NULL) {
 
+  helper_require("sf")
+
   # Set both tables to the destination CRS
   data <-
-    st_transform(st_crs(destination))
+    sf::st_transform(sf::st_crs(destination))
 
   data <-
     data %>%
-    mutate(data_area = st_area(.))
+    mutate(data_area = sf::st_area(.))
 
   intersects <-
-    suppressWarnings(st_intersection(data, destination)) %>%
+    suppressWarnings(sf::st_intersection(data, destination)) %>%
     mutate(
-      int_area_pct = st_area(.data$geometry) / .data$data_area,
+      int_area_pct = sf::st_area(.data$geometry) / .data$data_area,
       population_int = {{ population }} * .data$int_area_pct
       ) %>%
     group_by(!!! group_vars)
@@ -81,8 +82,8 @@ st_intersect_summarize <- function(data, destination, population,
     })
 
   suppressMessages(reduce(list(population,
-                               st_drop_geometry(sums),
-                               st_drop_geometry(means)),
+                               sf::st_drop_geometry(sums),
+                               sf::st_drop_geometry(means)),
                           full_join))
 
 }

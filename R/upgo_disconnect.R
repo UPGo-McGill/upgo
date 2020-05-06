@@ -14,29 +14,26 @@
 
 upgo_disconnect <- function() {
 
-  con <- property_all <- daily_all <- daily_inactive_all <- host_all <-
-    host_inactive_all <- reviews_all <- NULL
-
-  if (exists("property_all", envir = .GlobalEnv)) {
-    rm(property_all, envir = .GlobalEnv)}
+    if (exists("property_all", envir = .GlobalEnv)) {
+    rm("property_all", envir = .GlobalEnv)}
 
   if (exists("daily_all", envir = .GlobalEnv)) {
-    rm(daily_all, envir = .GlobalEnv)}
+    rm("daily_all", envir = .GlobalEnv)}
 
   if (exists("daily_inactive_all", envir = .GlobalEnv)) {
-    rm(daily_inactive_all, envir = .GlobalEnv)}
+    rm("daily_inactive_all", envir = .GlobalEnv)}
 
   if (exists("host_all", envir = .GlobalEnv)) {
-    rm(host_all, envir = .GlobalEnv)}
+    rm("host_all", envir = .GlobalEnv)}
 
   if (exists("host_inactive_all", envir = .GlobalEnv)) {
-    rm(host_inactive_all, envir = .GlobalEnv)}
+    rm("host_inactive_all", envir = .GlobalEnv)}
 
   if (exists("reviews_all", envir = .GlobalEnv)) {
-    rm(reviews_all, envir = .GlobalEnv)}
+    rm("reviews_all", envir = .GlobalEnv)}
 
-  if (exists("con", envir = .GlobalEnv)) {
-    rm(con, envir = .GlobalEnv)}
+  if (exists("con", envir = .upgo_env)) {
+    rm("con", envir = .upgo_env)}
 
 }
 

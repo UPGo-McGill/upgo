@@ -1,6 +1,6 @@
 Package: upgo
 Title: Utility Functions for UPGo Lab Members
-Version: 0.0.0.9000
+Version: 0.1.0.9000
 Authors@R: 
     person(given = "David",
            family = "Wachsmuth",
@@ -17,31 +17,26 @@ Depends:
     R (>= 3.5),
 Imports: 
     crayon (>= 1.3.4),
-    devtools (>= 2.2.1),
-    doFuture (>= 0.9.0),
-    doParallel (>= 1.0.15),
     dplyr (>= 0.8),
     foreach (>= 1.4.7),
+    glue (>= 1.3.1),
+    progressr (>= 0.5.0),
+    purrr (>= 0.3.2),
+    remotes (>= 2.1.1),
+    rlang (>= 0.3.4),
+    RPostgres (>= 1.2.0),
+    stringr (>= 1.4.0)
+Suggests: 
+    doFuture (>= 0.9.0),
     furrr (>= 0.1.0),
     future (>= 1.17.0),
     ggplot2 (>= 3.2.1),
-    glue (>= 1.3.1),
     httr (>= 1.4.1),
-    lubridate (>= 1.7.4),
     parallel (>= 3.6.0),
-    progress (>= 1.2.2),
-    progressr (>= 0.5.0),
-    purrr (>= 0.3.2),
-    readr (>= 1.3.1),
-    rlang (>= 0.3.4),
-    RPostgres (>= 1.2.0),
+    paws (>= 0.1.6),
     RSelenium (>= 1.7.5),
     rvest (>= 0.3.5),
     sf (>= 0.8),
-    stringr (>= 1.4.0),
-    tibble (>= 2.1.3),
+    testthat (>= 2.1.0),
     xml2 (>= 1.3.1)
-Suggests: 
-    paws (>= 0.1.6),
-    testthat (>= 2.1.0)
 RoxygenNote: 7.1.0

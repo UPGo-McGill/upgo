@@ -39,11 +39,15 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
 
   # Decide if remote connection is necessary
   if (remote | daily_inactive | host_inactive | reviews | !local) {
-    con <<- RPostgres::dbConnect(
-      RPostgres::Postgres(),
-      host = "025wpgs.campus.mcgill.ca",
-      dbname = "airdna",
-      check_interrupts = TRUE)
+    assign("con",
+           {
+             RPostgres::dbConnect(
+               RPostgres::Postgres(),
+               host = "025wpgs.campus.mcgill.ca",
+               dbname = "airdna",
+               check_interrupts = TRUE)
+             },
+           envir = .upgo_env)
   }
 
   # Open local connections if possible
@@ -54,16 +58,18 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
 
   # Otherwise open remote connections
   } else {
-    if (property) property_all <<- dplyr::tbl(con, "property")
-    if (daily) daily_all <<- dplyr::tbl(con, "daily")
-    if (host) host_all <<- dplyr::tbl(con, "host")
+    if (property) property_all <<- dplyr::tbl(.upgo_env$con, "property")
+    if (daily) daily_all <<- dplyr::tbl(.upgo_env$con, "daily")
+    if (host) host_all <<- dplyr::tbl(.upgo_env$con, "host")
   }
 
   # Open remote connections for tables only hosted remotely
-  if (daily_inactive) daily_inactive_all <<- dplyr::tbl(con, "daily_inactive")
-  if (host_inactive) host_inactive_all <<- dplyr::tbl(con, "host_inactive")
-  if (reviews) reviews_all <<- dplyr::tbl(con, "reviews")
+  if (daily_inactive) daily_inactive_all <<-
+      dplyr::tbl(.upgo_env$con, "daily_inactive")
+  if (host_inactive) host_inactive_all <<-
+      dplyr::tbl(.upgo_env$con, "host_inactive")
+  if (reviews) reviews_all <<-
+      dplyr::tbl(.upgo_env$con, "reviews")
 
-  con <- NULL
 }
 

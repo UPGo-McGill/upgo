@@ -4,12 +4,13 @@
 #'
 #' @param city_name A character string: the city to be scraped.
 #' @importFrom progressr handlers handler_progress progressor
-#' @importFrom rvest html_attr
 #' @importFrom stats na.omit
-#' @importFrom xml2 xml_children
 #' @return A list of URLs.
 
 helper_urls_cl <- function(city_name) {
+
+  helper_require("rvest")
+
 
   ## Define environment for %do_upgo% function ---------------------------------
 
@@ -42,7 +43,7 @@ helper_urls_cl <- function(city_name) {
   ## Scrape pages --------------------------------------------------------------
 
   url_list <-
-    foreach(i = seq_len(pages)) %do_upgo% {
+    foreach::foreach(i = seq_len(pages)) %do_upgo% {
       tryCatch({
         xml2::read_html(httr::GET(paste0(
           "https://", city_name, ".craigslist.org/search/apa?s=",
@@ -74,6 +75,9 @@ helper_urls_cl <- function(city_name) {
 #' @return A list of URLs.
 
 helper_urls_kj <- function(city_name, short_long) {
+
+  helper_require("rvest")
+
 
   ## Define environment for %do_upgo% function ---------------------------------
 
@@ -129,7 +133,7 @@ helper_urls_kj <- function(city_name, short_long) {
     rvest::html_node(xpath = '//*[@class="showing"]') %>%
     rvest::html_text() %>%
     stringr::str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
-    readr::parse_number() %>%
+    stringr::str_replace(",", "") %>%
     as.integer()
 
   pages <- min(ceiling(listings_to_scrape / 40), 100)
@@ -192,13 +196,13 @@ helper_urls_kj <- function(city_name, short_long) {
 #' @param urls A character vector of URLs to be scraped.
 #' @return A list of HTML objects.
 #' @importFrom dplyr %>% if_else mutate select tibble
-#' @importFrom foreach foreach
 #' @importFrom purrr map_dfr
-#' @importFrom rvest html_node html_nodes html_text
-#' @importFrom readr parse_number
 #' @importFrom stringr str_detect
 
 helper_download_listing <- function(urls) {
+
+  helper_require("rvest")
+
 
   ## Define environment for %do_upgo% function ---------------------------------
 
@@ -213,7 +217,7 @@ helper_download_listing <- function(urls) {
   ## Scrape listings then write to temp directory ------------------------------
 
   listings <-
-    foreach(i = seq_along(urls)) %do_upgo% {
+    foreach::foreach(i = seq_along(urls)) %do_upgo% {
       tryCatch({
         tryCatch(httr::GET(urls[[i]], httr::timeout(1)),
                  error = function(e) {
@@ -249,11 +253,12 @@ helper_download_listing <- function(urls) {
 #' @return A one-row data frame.
 #' @importFrom dplyr %>% if_else mutate select tibble
 #' @importFrom purrr map_dfr
-#' @importFrom rvest html_node html_nodes html_text
-#' @importFrom readr parse_number
 #' @importFrom stringr str_detect str_replace_all
 
 helper_parse_kj <- function(.x, .y, city_name) {
+
+  helper_require("rvest")
+
 
   ### Read listing, and exit early on failure ##################################
 
@@ -267,7 +272,8 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   ### Exit if the input is still not valid #####################################
 
-  fail <- tryCatch({html_node(.x, "head"); FALSE}, error = function(e) TRUE)
+  fail <-
+    tryCatch({rvest::html_node(.x, "head"); FALSE}, error = function(e) TRUE)
 
   if (fail) return(helper_error_kj(.y, city_name))
 
@@ -277,15 +283,15 @@ helper_parse_kj <- function(.x, .y, city_name) {
   # Should be 0 for valid listing, and 2 for 404 redirected
   redirect_check <-
     .x %>%
-    html_node(xpath = 'body[@id = "PageSRP"]') %>%
+    rvest::html_node(xpath = 'body[@id = "PageSRP"]') %>%
     length()
 
   if (redirect_check == 2) return(helper_error_kj(.y, city_name))
 
   expired_check <-
     .x %>%
-    html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
-    html_text()
+    rvest::html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
+    rvest::html_text()
 
   if (!is.na(expired_check)) return(helper_error_kj(.y, city_name))
 
@@ -299,7 +305,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   # If the field isn't correctly retrieved, try again with fresh download
   if (is.na(x_details)) {
-    .x <- read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
+    .x <- xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
 
     x_details <- helper_detail_parse(.x)
   }
@@ -310,64 +316,65 @@ helper_parse_kj <- function(.x, .y, city_name) {
   tibble(
     id =
       .x %>%
-      html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
-      html_text(),
+      rvest::html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
+      rvest::html_text(),
     url =
       .x %>%
-      html_node("head") %>%
-      html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-      html_text(),
+      rvest::html_node("head") %>%
+      rvest::html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
+      rvest::html_text(),
     title =
       .x %>%
-      html_node("head") %>%
-      html_node("title") %>%
-      html_text(),
+      rvest::html_node("head") %>%
+      rvest::html_node("title") %>%
+      rvest::html_text(),
     short_long = if_else(
-      str_detect(url, "v-location-court-terme|v-short-term-rental"),
+      stringr::str_detect(url, "v-location-court-terme|v-short-term-rental"),
       "short",
       "long"),
     created =
       .x %>%
-      html_node(xpath = '//*/time/@datetime') %>%
-      html_text() %>%
+      rvest::html_node(xpath = '//*/time/@datetime') %>%
+      rvest::html_text() %>%
       as.Date(),
     scraped = Sys.Date(),
     price =
       .x %>%
-      html_node(xpath = '//*[@class = "priceContainer-1419890179"]') %>%
-      html_node(xpath = 'span') %>%
-      html_node(xpath = 'span/@content') %>%
-      html_text() %>%
-      parse_number(),
+      rvest::html_node(xpath = '//*[@class = "priceContainer-1419890179"]') %>%
+      rvest::html_node(xpath = 'span') %>%
+      rvest::html_node(xpath = 'span/@content') %>%
+      rvest::html_text() %>%
+      stringr::str_replace("\\..*$", ""),
     city =
       city_name,
     location =
       .x %>%
-      html_node(xpath = '//*[@class = "address-3617944557"]') %>%
-      html_text(),
+      rvest::html_node(xpath = '//*[@class = "address-3617944557"]') %>%
+      rvest::html_text(),
     bedrooms =
       x_details %>%
-      str_extract('(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
+      stringr::str_extract('(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
     bathrooms =
       x_details %>%
-      str_extract('(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
+      stringr::str_extract('(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
     furnished =
-      x_details %>% str_extract('(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)'),
+      x_details %>%
+      stringr::str_extract('(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)'),
     details =
       x_details,
     text =
       .x %>%
-      html_node(xpath =
-                  '//*[@class = "descriptionContainer-3544745383"]') %>%
-      html_node('div') %>%
-      html_text(),
+      rvest::html_node(xpath =
+                         '//*[@class = "descriptionContainer-3544745383"]') %>%
+      rvest::html_node('div') %>%
+      rvest::html_text(),
     photos = suppressWarnings(list(
       .x %>%
-        html_nodes(
+        rvest::html_nodes(
           xpath =
             '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
-        ) %>%
-        str_extract('(?<=image:url..).*(?=..;back)')))
+          ) %>%
+        stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
     mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
                                  .data$furnished %in% c("Non", "No") ~ FALSE,
@@ -382,24 +389,18 @@ helper_parse_kj <- function(.x, .y, city_name) {
 #' the listing is located.
 #' @return A one-row data frame.
 #' @importFrom dplyr %>% if_else mutate select tibble
-#' @importFrom purrr map_dfr
-#' @importFrom rvest html_node html_nodes html_text
-#' @importFrom readr parse_number
-#' @importFrom stringr str_detect
 
 helper_error_kj <- function(.y, city_name) {
 
   tibble(
     id =
       .y %>%
-      str_extract('(?<=/)[:digit:]*$'),
+      stringr::str_extract('(?<=/)[:digit:]*$'),
     url =
       paste0("https://www.kijiji.ca", .y),
     title = NA_character_,
-    short_long = if_else(
-      str_detect(url, "v-location-court-terme|v-short-term-rental"),
-      "short",
-      "long"),
+    short_long = if_else(stringr::str_detect(
+      url, "v-location-court-terme|v-short-term-rental"), "short", "long"),
     created = as.Date(NA),
     scraped = Sys.Date(),
     price = NA_real_,
@@ -420,44 +421,45 @@ helper_error_kj <- function(.y, city_name) {
 #'
 #' @param .x A single scraped Kijiji listing.
 #' @return A character scalar.
-#' @importFrom rvest html_node html_nodes html_text
 
 helper_detail_parse <- function(.x) {
 
   x_details <-
     .x %>%
-    html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]'
+    rvest::html_node(xpath = '//*[@class = "itemAttributeCards-2416600896"]'
     ) %>%
-    html_text() %>%
-    str_replace_all("\n", "")
+    rvest::html_text() %>%
+    stringr::str_replace_all("\n", "")
 
   if (is.na(x_details)) {
     x_details <-
       .x %>%
-      html_node(xpath =
-                  '//*[@class = "attributeListWrapper-2108313769"]') %>%
-      html_text() %>%
-      str_replace_all("\n", "")
+      rvest::html_node(xpath =
+                         '//*[@class = "attributeListWrapper-2108313769"]') %>%
+      rvest::html_text() %>%
+      stringr::str_replace_all("\n", "")
   }
 
   if (is.na(x_details)) {
     x_details <-
       .x %>%
-      html_node(xpath = paste0('//*[@class = "itemAttributeCards-2416600896 ',
-                               'itemAttributeCards__fourCards-3070740560"]')
-      ) %>%
-      html_text() %>%
-      str_replace_all("\n", "")
+      rvest::html_node(xpath =
+                         paste0('//*[@class = "itemAttributeCards-2416600896 ',
+                                'itemAttributeCards__fourCards-3070740560"]')
+                       ) %>%
+      rvest::html_text() %>%
+      stringr::str_replace_all("\n", "")
   }
 
   if (is.na(x_details)) {
     x_details <-
       .x %>%
-      html_node(xpath = paste0('//*[@class = "itemAttributeCards-2416600896 ',
-                               'itemAttributeCards__twoCards-934340663"]')
-      ) %>%
-      html_text() %>%
-      str_replace_all("\n", "")
+      rvest::html_node(xpath =
+                         paste0('//*[@class = "itemAttributeCards-2416600896 ',
+                                'itemAttributeCards__twoCards-934340663"]')
+                       ) %>%
+      rvest::html_text() %>%
+      stringr::str_replace_all("\n", "")
   }
 
   x_details
@@ -487,46 +489,47 @@ helper_parse_cl <- function(.x, .y, city_name) {
   tibble(
     id = tryCatch({
       .x %>%
-        html_node(xpath = '/html/body/section[@class="page-container"]') %>%
-        html_node(xpath = 'section[@class="body"]') %>%
-        html_node(xpath = 'section[@class="userbody"]') %>%
-        html_node(xpath = 'div[@class="postinginfos"]') %>%
-        html_node("p") %>%
-        html_text() %>%
-        str_extract('(?<=id: ).*')
+        rvest::html_node(xpath =
+                           '/html/body/section[@class="page-container"]') %>%
+        rvest::html_node(xpath = 'section[@class="body"]') %>%
+        rvest::html_node(xpath = 'section[@class="userbody"]') %>%
+        rvest::html_node(xpath = 'div[@class="postinginfos"]') %>%
+        rvest::html_node("p") %>%
+        rvest::html_text() %>%
+        stringr::str_extract('(?<=id: ).*')
     }, error = function(e) NA_character_),
     url =
       .x %>%
-      html_node(xpath = '/html/head/link[@rel="canonical"]/@href') %>%
-      html_text(),
+      rvest::html_node(xpath = '/html/head/link[@rel="canonical"]/@href') %>%
+      rvest::html_text(),
     title =
       .x %>%
-      html_node(xpath = '/html/head/title') %>%
-      html_text(),
+      rvest::html_node(xpath = '/html/head/title') %>%
+      rvest::html_text(),
     created =
       .x %>%
-      html_node(xpath = '//*[@id="display-date"]/time/@datetime') %>%
-      html_text(),
+      rvest::html_node(xpath = '//*[@id="display-date"]/time/@datetime') %>%
+      rvest::html_text(),
     scraped =
       Sys.Date(),
     price =
       tryCatch({
         .x %>%
-          html_node(xpath = '/html/body') %>%
-          html_node(xpath = 'section[@class = "page-container"]') %>%
-          html_node(xpath = 'section[@class = "body"]') %>%
-          html_node(xpath = 'h2[@class = "postingtitle"]') %>%
-          html_node(xpath = 'span/span[@class = "price"]') %>%
-          html_text() %>%
-          readr::parse_number()
+          rvest::html_node(xpath = '/html/body') %>%
+          rvest::html_node(xpath = 'section[@class = "page-container"]') %>%
+          rvest::html_node(xpath = 'section[@class = "body"]') %>%
+          rvest::html_node(xpath = 'h2[@class = "postingtitle"]') %>%
+          rvest::html_node(xpath = 'span/span[@class = "price"]') %>%
+          rvest::html_text() %>%
+          stringr::str_replace("\\$", "")
       }, error = function(e) NA_real_),
     city =
       city_name,
     location =
       .x %>%
-      html_node(xpath = '/html/head') %>%
-      html_node(xpath = 'meta[@name = "geo.position"]/@content') %>%
-      html_text(),
+      rvest::html_node(xpath = '/html/head') %>%
+      rvest::html_node(xpath = 'meta[@name = "geo.position"]/@content') %>%
+      rvest::html_text(),
     bedrooms =
       NA_character_,
     bathrooms =
@@ -536,41 +539,42 @@ helper_parse_cl <- function(.x, .y, city_name) {
     details =
       tryCatch({
         .x %>%
-          html_node(xpath = '/html/body/section[@class="page-container"]') %>%
-          html_node(xpath = 'section[@class="body"]') %>%
-          html_node(xpath = 'section[@class="userbody"]') %>%
-          html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
-          html_nodes(xpath = 'p') %>%
-          html_text() %>%
-          str_replace_all("\n", "") %>%
-          str_replace_all("  ", " ") %>%
-          str_replace_all("  ", " ") %>%
-          str_replace_all("  ", " ") %>%
-          str_replace_all("  ", " ") %>%
-          str_extract('(?<= ).*(?= )') %>%
+          rvest::html_node(xpath =
+                             '/html/body/section[@class="page-container"]') %>%
+          rvest::html_node(xpath = 'section[@class="body"]') %>%
+          rvest::html_node(xpath = 'section[@class="userbody"]') %>%
+          rvest::html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
+          rvest::html_nodes(xpath = 'p') %>%
+          rvest::html_text() %>%
+          stringr::str_replace_all("\n", "") %>%
+          stringr::str_replace_all("  ", " ") %>%
+          stringr::str_replace_all("  ", " ") %>%
+          stringr::str_replace_all("  ", " ") %>%
+          stringr::str_replace_all("  ", " ") %>%
+          stringr::str_extract('(?<= ).*(?= )') %>%
           paste(collapse = "; ")
       }, error = function(e) NA_character_),
     text =
       tryCatch({
         .x %>%
-          html_node(xpath = '/html/body/section[@class="page-container"]') %>%
-          html_node(xpath = 'section[@class= "body"]') %>%
-          html_node(xpath = 'section[@class= "userbody"]') %>%
-          html_node(xpath = 'section[@id = "postingbody"]') %>%
-          html_text() %>%
-          str_replace(
+          rvest::html_node(xpath =
+                             '/html/body/section[@class="page-container"]') %>%
+          rvest::html_node(xpath = 'section[@class= "body"]') %>%
+          rvest::html_node(xpath = 'section[@class= "userbody"]') %>%
+          rvest::html_node(xpath = 'section[@id = "postingbody"]') %>%
+          rvest::html_text() %>%
+          stringr::str_replace(
             "\n            QR Code Link to This Post\n            \n        \n",
             "") %>%
-          str_replace_all("\u2022\t", "") %>%
-          str_replace_all("\n", " ")
+          stringr::str_replace_all("\u2022\t", "") %>%
+          stringr::str_replace_all("\n", " ")
       }, error = function(e) NA_character_),
     photos =
       list(.x %>%
-             html_nodes(xpath = '//*/img') %>%
-             html_node(xpath = '@src') %>%
-             html_text() %>%
-             # `[`(2:length(.)) %>%
-             str_replace("50x50c", "600x450") %>%
+             rvest::html_nodes(xpath = '//*/img') %>%
+             rvest::html_node(xpath = '@src') %>%
+             rvest::html_text() %>%
+             stringr::str_replace("50x50c", "600x450") %>%
              unique())
   )
 
@@ -583,18 +587,14 @@ helper_parse_cl <- function(.x, .y, city_name) {
 #' @param city_name A character string indicating the name of the city in which
 #' the listing is located.
 #' @return A one-row data frame.
-#' @importFrom dplyr %>% if_else mutate select tibble
-#' @importFrom purrr map_dfr
-#' @importFrom rvest html_node html_nodes html_text
-#' @importFrom readr parse_number
-#' @importFrom stringr str_detect
+#' @importFrom dplyr %>% tibble
 
 helper_error_cl <- function(.y, city_name) {
 
   tibble(
     id =
       .y %>%
-      str_extract('(?<=/)[:digit:]*(?=.html)'),
+      stringr::str_extract('(?<=/)[:digit:]*(?=.html)'),
     url =
       .y,
     title = NA_character_,
@@ -620,15 +620,10 @@ helper_error_cl <- function(.y, city_name) {
 #' country) from a single Airbnb listing and forwards to the calling function
 #' for further processing.
 #'
-#' TKTK
-#'
 #' @param PID An Airbnb property ID to be scraped.
-#' @import RSelenium
-#' @importFrom dplyr case_when last
-#' @importFrom tibble tibble
+#' @importFrom dplyr case_when last tibble
 #' @importFrom stringr str_detect str_extract str_extract_all str_replace
 #' @importFrom stringr str_split
-#' @importFrom purrr map_chr
 
 helper_scrape_ab <- function(PID) {
 
@@ -689,16 +684,16 @@ helper_scrape_ab <- function(PID) {
   if (length(element_top) > 0) {
 
     element_top <-
-      map_chr(element_top, ~{
+      purrr::map_chr(element_top, ~{
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
     element_top_processed <-
       element_top %>%
-      str_extract('(?<=">).*(?=</a>)') %>%
-      str_replace("<span>", "") %>%
-      str_replace("</span>", "") %>%
-      str_split(", ") %>%
+      stringr::str_extract('(?<=">).*(?=</a>)') %>%
+      stringr::str_replace("<span>", "") %>%
+      stringr::str_replace("</span>", "") %>%
+      stringr::str_split(", ") %>%
       unlist()
 
     if (length(element_top_processed) > 0) {
@@ -712,10 +707,10 @@ helper_scrape_ab <- function(PID) {
 
   ### Deal with Luxe and Plus listings #########################################
 
-  if (str_detect(remDr$getCurrentUrl(), "luxury")) {
+  if (stringr::str_detect(remDr$getCurrentUrl(), "luxury")) {
     element_bottom <-
       remDr$findElements("class", "_4mq26") %>%
-      map_chr(~.x$getElementAttribute("outerHTML")[[1]])
+      purrr::map_chr(~.x$getElementAttribute("outerHTML")[[1]])
 
     scrape_result[1,]$raw <- list(element_bottom)
     scrape_result[1,]$note <- "luxe"
@@ -727,7 +722,7 @@ helper_scrape_ab <- function(PID) {
   if (str_detect(remDr$getCurrentUrl(), "plus")) {
     element_bottom <-
       remDr$findElements("class", "_ylytgbo") %>%
-      map_chr(~.x$getElementAttribute("outerHTML")[[1]])
+      purrr::map_chr(~.x$getElementAttribute("outerHTML")[[1]])
 
     scrape_result[1,]$raw <- list(element_bottom)
     scrape_result[1,]$note <- "plus"
@@ -744,7 +739,7 @@ helper_scrape_ab <- function(PID) {
   if (length(element_bottom) %in% 1:3) {
 
     element_bottom <-
-      map_chr(element_bottom, ~{
+      purrr::map_chr(element_bottom, ~{
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
@@ -763,7 +758,7 @@ helper_scrape_ab <- function(PID) {
   if (length(element_bottom) > 0) {
 
     element_bottom <-
-      map_chr(element_bottom, ~{
+      purrr::map_chr(element_bottom, ~{
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
@@ -782,7 +777,7 @@ helper_scrape_ab <- function(PID) {
   if (length(element_bottom) < 0) {
 
     element_bottom <-
-      map_chr(element_bottom, ~{
+      purrr::map_chr(element_bottom, ~{
         .x$getElementAttribute("outerHTML")[[1]]
       })
 
@@ -807,8 +802,7 @@ helper_scrape_ab <- function(PID) {
 #'
 #' @param scrape_result A one-row data frame produced as an interim result from
 #' \code{helper_scrape_ab}.
-#' @importFrom dplyr bind_rows case_when filter last mutate select
-#' @importFrom tibble tibble
+#' @importFrom dplyr bind_rows case_when filter last mutate select tibble
 #' @importFrom stringr str_detect str_extract str_replace str_split
 #' @importFrom purrr map map_chr map_int map_lgl
 
@@ -817,59 +811,6 @@ helper_parse_ab <- function(scrape_result) {
   ### Exit early on NULL #######################################################
 
   if (is.null(scrape_result)) return(NULL)
-
-
-  ### Country list for checking ################################################
-
-  country_list <-
-    c("Afghanistan", "\u00c5land Islands", "Albania", "Algeria",
-      "American Samoa", "Andorra", "Angola", "Anguilla", "Antigua and Barbuda",
-      "Argentina", "Armenia", "Aruba", "Australia", "Austria", "Azerbaijan",
-      "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
-      "Belize", "Benin", "Bermuda", "Bhutan", "Bolivia",
-      "Bonaire, Sint Eustatius and Saba", "Bosnia and Herzegovina", "Botswana",
-      "Brazil", "British Virgin Islands", "Brunei", "Bulgaria", "Burkina Faso",
-      "Burundi", "Cambodia", "Cameroon", "Canada", "Cape Verde",
-      "Cayman Islands", "Central African Republic", "Chad", "Chile", "China",
-      "Christmas Island", "Cocos (Keeling) Islands", "Colombia", "Comoros",
-      "Congo", "Cook Islands", "Costa Rica", "Croatia", "Cuba", "Cura\u00e7ao",
-      "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark",
-      "Djibouti", "Dominica", "Dominican Republic", "East Timor", "Ecuador",
-      "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia",
-      "Ethiopia", "Falkland Islands (Malvinas)", "Faroe Islands", "Fiji",
-      "Finland", "France", "French Guiana", "French Polynesia", "Gabon",
-      "Gambia", "Georgia", "Germany", "Ghana", "Gibraltar", "Greece",
-      "Greenland", "Grenada", "Guadeloupe", "Guam", "Guatemala", "Guernsey",
-      "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hong Kong",
-      "Hungary", "Iceland", "India", "Indonesia", "Iraq", "Ireland",
-      "Isle of Man", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan",
-      "Jersey", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait",
-      "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya",
-      "Liechtenstein", "Lithuania", "Luxembourg", "Macau", "Macedonia",
-      "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta",
-      "Marshall Islands", "Martinique", "Mauritania", "Mauritius", "Mayotte",
-      "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
-      "Montserrat", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru",
-      "Nepal", "Netherlands", "New Caledonia", "New Zealand", "Nicaragua",
-      "Niger", "Nigeria", "Niue", "Norfolk Island", "Northern Mariana Islands",
-      "Norway", "Oman", "Pakistan", "Palau", "Palestinian Territories",
-      "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
-      "Pitcairn Islands", "Poland", "Portugal", "Puerto Rico", "Qatar",
-      "R\u00e9union", "Romania", "Russia", "Rwanda", "Saint Barth\u00e9lemy",
-      "Saint Helena", "Saint Kitts and Nevis", "Saint Lucia", "Saint Martin",
-      "Saint Pierre and Miquelon", "Saint Vincent and the Grenadines", "Samoa",
-      "San Marino", "S\u00e3o Tom\u00e9 and Pr\u00edncipe", "Saudi Arabia",
-      "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore",
-      "Sint Maarten", "Slovakia", "Slovenia", "Solomon Islands", "Somalia",
-      "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka",
-      "Sudan", "Suriname", "Svalbard and Jan Mayen", "Swaziland", "Sweden",
-      "Switzerland", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Togo",
-      "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
-      "Turks and Caicos Islands", "Tuvalu", "U.S. Virgin Islands", "Uganda",
-      "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
-      "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam",
-      "Wallis and Futuna", "Yemen", "Zambia", "Zimbabwe"
-    )
 
 
   ### Process missing ##########################################################
@@ -892,26 +833,19 @@ helper_parse_ab <- function(scrape_result) {
 
   if (scrape_result$note == "luxe") {
 
-    US_states <-
-      c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
-        "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
-        "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
-        "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
-        "WI", "WY")
-
     return(
 
       scrape_result %>%
         mutate(
-          location = map(.data$raw, ~{
-            .x[str_detect(.x, ",")] %>%
-              str_extract('(?=>).+(?=<)') %>%
-              str_replace(">", "") %>%
-              str_split(", ") %>%
+          location = purrr::map(.data$raw, ~{
+            .x[stringr::str_detect(.x, ",")] %>%
+              stringr::str_extract('(?=>).+(?=<)') %>%
+              stringr::str_replace(">", "") %>%
+              stringr::str_split(", ") %>%
               unlist()
           }),
-          city = map_chr(.data$location, ~.x[1]),
-          region = map_chr(.data$location, ~{
+          city = purrr::map_chr(.data$location, ~.x[1]),
+          region = purrr::map_chr(.data$location, ~{
             if (.x[2] %in% US_states) {
               case_when(
                 .x[2] == "AL" ~ "Alabama",  .x[2] == "AK" ~ "Alaska",
@@ -944,7 +878,7 @@ helper_parse_ab <- function(scrape_result) {
               )
             } else NA_character_
           }),
-          country = map_chr(.data$location, ~{
+          country = purrr::map_chr(.data$location, ~{
             if (.x[2] %in% US_states) "United States" else .x[2]
           }),
           date = Sys.Date()) %>%
@@ -960,18 +894,18 @@ helper_parse_ab <- function(scrape_result) {
 
     return(
       scrape_result %>%
-        mutate(location = map(.data$raw, ~{
+        mutate(location = purrr::map(.data$raw, ~{
           .x %>%
-            str_extract('(?=>).+(?=<)') %>%
-            str_replace(">", "") %>%
-            str_split(", ") %>%
+            stringr::str_extract('(?=>).+(?=<)') %>%
+            stringr::str_replace(">", "") %>%
+            stringr::str_split(", ") %>%
             unlist()
         })) %>%
-        mutate(city = map_chr(.data$location, ~.x[1]),
-               region = map_chr(.data$location, ~{
+        mutate(city = purrr::map_chr(.data$location, ~.x[1]),
+               region = purrr::map_chr(.data$location, ~{
                  if (length(.x) == 2) NA_character_ else .x[2]
                }),
-               country = map_chr(.data$location, ~{
+               country = purrr::map_chr(.data$location, ~{
                  if (length(.x) == 2) .x[2] else .x[3]
                }),
                date = Sys.Date()) %>%
@@ -987,10 +921,10 @@ helper_parse_ab <- function(scrape_result) {
 
     content <-
       scrape_result$raw[[1]] %>%
-      str_extract('(?<=">).*(?=</a>)') %>%
-      str_replace("<span>", "") %>%
-      str_replace("</span>", "") %>%
-      str_split(", ") %>%
+      stringr::str_extract('(?<=">).*(?=</a>)') %>%
+      stringr::str_replace("<span>", "") %>%
+      stringr::str_replace("</span>", "") %>%
+      stringr::str_split(", ") %>%
       unlist()
 
     # Deal with Bonaire comma
@@ -1037,9 +971,10 @@ helper_parse_ab <- function(scrape_result) {
 
     content <-
       # The valid element seems to be the only one with a comma
-      scrape_result$raw[[1]][str_detect(scrape_result$raw[[1]], ",")] %>%
-      str_extract('(?<=_s1tlw0m..).*(?=<)') %>%
-      str_split(", ") %>%
+      scrape_result$raw[[1]][stringr::str_detect(scrape_result$raw[[1]],
+                                                 ",")] %>%
+      stringr::str_extract('(?<=_s1tlw0m..).*(?=<)') %>%
+      stringr::str_split(", ") %>%
       unlist()
 
     # Deal with Bonaire comma
@@ -1069,19 +1004,19 @@ helper_parse_ab <- function(scrape_result) {
     return(
       scrape_result %>%
         mutate(
-          location = map(.data$raw, ~{
-            .x[str_detect(.x, "place is located in")] %>%
-              str_extract("(?<=located in ).*(?=.</div)") %>%
-              str_split(", ") %>%
+          location = purrr::map(.data$raw, ~{
+            .x[stringr::str_detect(.x, "place is located in")] %>%
+              stringr::str_extract("(?<=located in ).*(?=.</div)") %>%
+              stringr::str_split(", ") %>%
               unlist()
           }),
-          city = map_chr(.data$location, ~{
+          city = purrr::map_chr(.data$location, ~{
             if (length(.x) >= 2) .x[1] else NA_character_
           }),
-          region = map_chr(.data$location, ~{
+          region = purrr::map_chr(.data$location, ~{
             if (length(.x) == 3) .x[2] else NA_character_
           }),
-          country = map_chr(.data$location, ~{
+          country = purrr::map_chr(.data$location, ~{
             if (length(.x) >= 1) last(.x) else "PARSE ERROR TO CHECK"
           }),
           date = Sys.Date()) %>%
@@ -1097,20 +1032,20 @@ helper_parse_ab <- function(scrape_result) {
     return(
       scrape_result %>%
         mutate(
-          city = map_chr(.data$raw, ~{
+          city = purrr::map_chr(.data$raw, ~{
             .x[1] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
+              stringr::str_extract("(?<=><span>).*(?=</span>)") %>%
+              stringr::str_replace(",", "")
           }),
-          region = map_chr(.data$raw, ~{
+          region = purrr::map_chr(.data$raw, ~{
             .x[2] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
+              stringr::str_extract("(?<=><span>).*(?=</span>)") %>%
+              stringr::str_replace(",", "")
           }),
-          country = map_chr(.data$raw, ~{
+          country = purrr::map_chr(.data$raw, ~{
             .x[3] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
+              stringr::str_extract("(?<=><span>).*(?=</span>)") %>%
+              stringr::str_replace(",", "")
           }),
           date = Sys.Date()
         ) %>%
@@ -1127,16 +1062,16 @@ helper_parse_ab <- function(scrape_result) {
     return(
       scrape_result %>%
         mutate(
-          city = map_chr(.data$raw, ~{
+          city = purrr::map_chr(.data$raw, ~{
             .x[1] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
+              stringr::str_extract("(?<=><span>).*(?=</span>)") %>%
+              stringr::str_replace(",", "")
           }),
           region = NA_character_,
-          country = map_chr(.data$raw, ~{
+          country = purrr::map_chr(.data$raw, ~{
             .x[2] %>%
-              str_extract("(?<=><span>).*(?=</span>)") %>%
-              str_replace(",", "")
+              stringr::str_extract("(?<=><span>).*(?=</span>)") %>%
+              stringr::str_replace(",", "")
           }),
           date = Sys.Date()
         ) %>%
@@ -1153,19 +1088,19 @@ helper_parse_ab <- function(scrape_result) {
     return(
       scrape_result %>%
         mutate(
-          location = map(.data$raw, ~{
-            .x[str_detect(.x, "place is located in")] %>%
-              str_extract("(?<=located in ).*(?=.</div)") %>%
-              str_split(", ") %>%
+          location = purrr::map(.data$raw, ~{
+            .x[stringr::str_detect(.x, "place is located in")] %>%
+              stringr::str_extract("(?<=located in ).*(?=.</div)") %>%
+              stringr::str_split(", ") %>%
               unlist()
           }),
-          city = map_chr(.data$location, ~{
+          city = purrr::map_chr(.data$location, ~{
             if (length(.x) >= 2) .x[1] else NA_character_
           }),
-          region = map_chr(.data$location, ~{
+          region = purrr::map_chr(.data$location, ~{
             if (length(.x) == 3) .x[2] else NA_character_
           }),
-          country = map_chr(.data$location, ~{
+          country = purrr::map_chr(.data$location, ~{
             if (length(.x) >= 1) last(.x) else "PARSE ERROR TO CHECK"
           }),
           date = Sys.Date()) %>%

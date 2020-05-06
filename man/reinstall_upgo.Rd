@@ -11,8 +11,8 @@ reinstall_upgo(branch = NULL)
 not the master branch (default).}
 }
 \value{
-There is no tangible output to the function, simply the detaching and
-updating the upgo package.
+There is no tangible output to the function; it simply detaches and
+updates the upgo package.
 }
 \description{
 Function to reinstall the upgo package from GitHub
