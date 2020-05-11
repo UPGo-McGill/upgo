@@ -344,7 +344,8 @@ helper_parse_kj <- function(.x, .y, city_name) {
       rvest::html_node(xpath = 'span') %>%
       rvest::html_node(xpath = 'span/@content') %>%
       rvest::html_text() %>%
-      stringr::str_replace("\\..*$", ""),
+      stringr::str_replace("\\..*$", "") %>%
+      as.numeric(),
     city =
       city_name,
     location =
@@ -521,7 +522,8 @@ helper_parse_cl <- function(.x, .y, city_name) {
           rvest::html_node(xpath = 'h2[@class = "postingtitle"]') %>%
           rvest::html_node(xpath = 'span/span[@class = "price"]') %>%
           rvest::html_text() %>%
-          stringr::str_replace("\\$", "")
+          stringr::str_replace("\\$", "") %>%
+          as.numeric()
       }, error = function(e) NA_real_),
     city =
       city_name,
