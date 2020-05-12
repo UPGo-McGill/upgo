@@ -2,6 +2,7 @@
 
 export("%do_upgo%")
 export(check_ip)
+export(convert_currency)
 export(gg_bbox)
 export(reinstall_strr)
 export(reinstall_upgo)
