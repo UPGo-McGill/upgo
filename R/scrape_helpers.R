@@ -487,6 +487,26 @@ helper_parse_cl <- function(.x, .y, city_name) {
     return(helper_error_cl(.y, city_name))
   }
 
+  # Generate details object
+  x_details <-
+    tryCatch({
+      .x %>%
+        rvest::html_node(xpath =
+                           '/html/body/section[@class="page-container"]') %>%
+        rvest::html_node(xpath = 'section[@class="body"]') %>%
+        rvest::html_node(xpath = 'section[@class="userbody"]') %>%
+        rvest::html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
+        rvest::html_nodes(xpath = 'p') %>%
+        rvest::html_text() %>%
+        stringr::str_replace_all("\n", "") %>%
+        stringr::str_replace_all("  ", " ") %>%
+        stringr::str_replace_all("  ", " ") %>%
+        stringr::str_replace_all("  ", " ") %>%
+        stringr::str_replace_all("  ", " ") %>%
+        stringr::str_extract('(?<= ).*(?= )') %>%
+        paste(collapse = "; ")
+    }, error = function(e) NA_character_)
+
   tibble(
     id = tryCatch({
       .x %>%
@@ -533,29 +553,13 @@ helper_parse_cl <- function(.x, .y, city_name) {
       rvest::html_node(xpath = 'meta[@name = "geo.position"]/@content') %>%
       rvest::html_text(),
     bedrooms =
-      NA_character_,
+      str_extract(x_details, '^.(?=BR)'),
     bathrooms =
-      NA_character_,
+      str_extract(x_details, '(?<=BR . ).{1,3}(?=Ba)'),
     furnished =
-      NA,
+      if_else(str_detect(x_details, "furnished"), TRUE, FALSE),
     details =
-      tryCatch({
-        .x %>%
-          rvest::html_node(xpath =
-                             '/html/body/section[@class="page-container"]') %>%
-          rvest::html_node(xpath = 'section[@class="body"]') %>%
-          rvest::html_node(xpath = 'section[@class="userbody"]') %>%
-          rvest::html_node(xpath = 'div[@class = "mapAndAttrs"]') %>%
-          rvest::html_nodes(xpath = 'p') %>%
-          rvest::html_text() %>%
-          stringr::str_replace_all("\n", "") %>%
-          stringr::str_replace_all("  ", " ") %>%
-          stringr::str_replace_all("  ", " ") %>%
-          stringr::str_replace_all("  ", " ") %>%
-          stringr::str_replace_all("  ", " ") %>%
-          stringr::str_extract('(?<= ).*(?= )') %>%
-          paste(collapse = "; ")
-      }, error = function(e) NA_character_),
+      x_details,
     text =
       tryCatch({
         .x %>%
