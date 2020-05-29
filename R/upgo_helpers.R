@@ -48,10 +48,6 @@ helper_plan <- function() {
 
 handler_upgo <- function(message) {
 
-  cray_opt <- .Options$crayon.enabled
-  if (crayon::has_color()) options(crayon.enabled = TRUE)
-  on.exit(.Options$crayon.enabled <- cray_opt)
-
   handlers(
     handler_progress(
       format = silver(italic(paste0(

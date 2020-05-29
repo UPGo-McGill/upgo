@@ -137,4 +137,6 @@ US_states <-
 
 ### Quiet R CMD check ##########################################################
 
-utils::globalVariables(c(".", "remDr", ".con", "i", "j", ".upgo_env"))
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(c(".", "remDr", ".con", "i", "j", ".upgo_env"))
+}

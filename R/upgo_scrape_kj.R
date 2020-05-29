@@ -128,13 +128,13 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     ## Skip city if it is already finished in recovery data --------------------
 
     if (finished_flag[[n]]) {
-      if (!quiet) message(silver(bold(glue(
+      if (!quiet) message(crayon::silver(crayon::bold(glue::glue(
         "({n}/{length(city)}) ",
         "Recovery data for {city_name} detected; skipping scrape."))))
       next
     }
 
-    if (!quiet) message(silver(bold(glue(
+    if (!quiet) message(crayon::silver(crayon::bold(glue::glue(
       "({n}/{length(city)}) ",
       "Scraping Kijiji rental listings in {city_name} ",
       "with {helper_plan()}."))))
@@ -161,8 +161,9 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       time_final_2 <- attr(total_time, 'units')
 
       if (!quiet) {
-        message(silver(length(url_list_short), "STR listing URLs scraped in "),
-                cyan(time_final_1, time_final_2), silver("."))
+        message(crayon::silver(length(url_list_short),
+                               "STR listing URLs scraped in "),
+                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))
       }
 
     }
@@ -186,8 +187,9 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       time_final_2 <- attr(total_time, 'units')
 
       if (!quiet) {
-        message(silver(length(url_list_long), "LTR listing URLs scraped in "),
-                cyan(time_final_1, time_final_2), silver("."))
+        message(crayon::silver(length(url_list_long),
+                               "LTR listing URLs scraped in "),
+                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))
       }
 
     }
@@ -207,10 +209,6 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       url_list[[n]] <- url_list_long
     }
 
-    # # Still needed?
-    # url_list[[n]] <- url_list[[n]][url_list[[n]] != "https://www.kijiji.caNA"]
-    # url_list[[n]] <- str_replace(url_list[[n]], " ", "")
-
 
     ## Process duplicate listings if old_results is provided -------------------
 
@@ -218,13 +216,13 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
       updated_results <-
         old_results %>%
-        filter(city == city_name, url %in% url_list[[n]]) %>%
-        mutate(scraped = Sys.Date())
+        dplyr::filter(city == city_name, url %in% url_list[[n]]) %>%
+        dplyr::mutate(scraped = Sys.Date())
 
       old_results <-
         old_results %>%
         dplyr::anti_join(updated_results, by = "id") %>%
-        bind_rows(updated_results)
+        dplyr::bind_rows(updated_results)
 
       url_list[[n]] <-
         url_list[[n]][!url_list[[n]] %in% updated_results$url]
@@ -235,14 +233,14 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
         listings[[n]] <- NULL
         results[[n]] <- old_results
 
-        if (!quiet) message(silver(glue(
+        if (!quiet) message(crayon::silver(glue::glue(
           "{nrow(updated_results)} previously scraped listings still active. ",
           "No new results to scrape.")))
 
         next
       }
 
-      if (!quiet) message(silver(glue(
+      if (!quiet) message(crayon::silver(glue::glue(
         "{nrow(updated_results)} previously scraped listings still active.")))
 
     }
@@ -328,8 +326,8 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     time_final_2 <- attr(total_time, 'units')
 
     if (!quiet) {
-      message(silver(nrow(results[[n]]), "listings parsed in "),
-              cyan(time_final_1, time_final_2), silver("."))
+      message(crayon::silver(nrow(results[[n]]), "listings parsed in "),
+              crayon::cyan(time_final_1, time_final_2), crayon::silver("."))
     }
 
 
@@ -338,13 +336,13 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     if (!missing(old_results)) {
       results[[n]] <-
         old_results %>%
-        filter(.data$city == city_name) %>%
-        bind_rows(results[[n]])
+        dplyr::filter(.data$city == city_name) %>%
+        dplyr::bind_rows(results[[n]])
     }
 
     results[[n]] <-
       results[[n]] %>%
-      arrange(.data$id)
+      dplyr::arrange(.data$id)
 
 
     ## Set finished_flag upon successfully completing a city -------------------
