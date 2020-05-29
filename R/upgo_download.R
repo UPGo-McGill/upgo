@@ -40,4 +40,7 @@ upgo_download <- function(urls, proxies = NULL, quiet = FALSE) {
   } else {
     results <- helper_download_listing(urls)
   }
+
+  return(results)
+
 }
