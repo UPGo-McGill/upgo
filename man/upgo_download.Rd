@@ -4,10 +4,13 @@
 \alias{upgo_download}
 \title{Download URLs with progress reporting}
 \usage{
-upgo_download(urls, quiet = FALSE)
+upgo_download(urls, proxies = NULL, quiet = FALSE)
 }
 \arguments{
 \item{urls}{A character vector of URLs to download.}
+
+\item{proxies}{Character vector of IPs to use for proxy connections. If
+supplied, this must be at least as long as the number of cores.}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
