@@ -355,30 +355,12 @@ helper_parse_kj <- function(.x, .y, city_name) {
     bedrooms =
       x_details %>%
       stringr::str_extract('(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
-    bedrooms =
-      dplyr::if_else(is.na(.data$bedrooms), {
-        x_details %>%
-          stringr::str_extract(
-            '(?<=Bedrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
-      }, .data$bedrooms),
     bathrooms =
       x_details %>%
       stringr::str_extract('(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
-    bathrooms =
-      dplyr::if_else(is.na(.data$bathrooms), {
-        x_details %>%
-          stringr::str_extract(
-            '(?<=Bathrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
-      }, .data$bathrooms),
     furnished =
       x_details %>%
       stringr::str_extract('(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)'),
-    furnished =
-      dplyr::if_else(is.na(.data$furnished), {
-        x_details %>%
-          stringr::str_extract(
-            '(?<=Furnished</dt><dd class=\"twoLinesValue-2815147826\">).*?(?=</dd)')
-      }, .data$furnished),
     details =
       x_details,
     text =
@@ -395,7 +377,26 @@ helper_parse_kj <- function(.x, .y, city_name) {
           ) %>%
         stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
-    mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
+    mutate(
+      bedrooms =
+        dplyr::if_else(is.na(.data$bedrooms), {
+          x_details %>%
+            stringr::str_extract(
+              '(?<=Bedrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
+        }, .data$bedrooms),
+      bathrooms =
+        dplyr::if_else(is.na(.data$bathrooms), {
+          x_details %>%
+            stringr::str_extract(
+              '(?<=Bathrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
+        }, .data$bathrooms),
+      furnished =
+        dplyr::if_else(is.na(.data$furnished), {
+          x_details %>%
+            stringr::str_extract(
+              '(?<=Furnished</dt><dd class=\"twoLinesValue-2815147826\">).*?(?=</dd)')
+        }, .data$furnished),
+      furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
                                  .data$furnished %in% c("Non", "No") ~ FALSE,
                                  is.na(.data$furnished) ~ NA))
 }
