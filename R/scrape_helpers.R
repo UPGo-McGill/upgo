@@ -453,6 +453,14 @@ helper_parse_kj <- function(.x, .y, city_name) {
           ) %>%
         stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
+    mutate(bedrooms = case_when(
+      bedrooms == "1 chambre et salon"               ~ "1 + Den",
+      bedrooms == "2 chambres et coin d\\u00e9tente" ~ "2 + Den",
+      bedrooms == "6+"                               ~ "6+",
+      bedrooms == "6 chambres ou plus"               ~ "5+",
+      bedrooms == "Studio"                           ~ "Bachelor/Studio",
+      TRUE ~ bedrooms
+    )) %>%
     mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
                                  .data$furnished %in% c("Non", "No") ~ FALSE,
                                  is.na(.data$furnished) ~ NA))
