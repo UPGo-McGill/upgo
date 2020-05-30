@@ -7,6 +7,7 @@
 upgo_scrape_cl(
   city,
   old_results = NULL,
+  old_results_add = FALSE,
   recovery = FALSE,
   proxies = NULL,
   quiet = FALSE
@@ -20,6 +21,9 @@ correspond to the domain prefix used for a city's Craigslist site (e.g.
 \item{old_results}{A data frame. If the output of a previous run of
 \code{upgo_scrape_cl} is supplied, listings previously scraped will
 be incorporated into the new results.}
+
+\item{old_results_add}{A logical scalar. Should the function add old results
+to the table, or skip them (default)?}
 
 \item{recovery}{A logical vector. Should the function attempt to recover
 results from a previous, unsuccessful function call?}

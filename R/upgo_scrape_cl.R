@@ -9,6 +9,8 @@
 #' @param old_results A data frame. If the output of a previous run of
 #' \code{upgo_scrape_cl} is supplied, listings previously scraped will
 #' be incorporated into the new results.
+#' @param old_results_add A logical scalar. Should the function add old results
+#' to the table, or skip them (default)?
 #' @param recovery A logical vector. Should the function attempt to recover
 #' results from a previous, unsuccessful function call?
 #' @param proxies Character vector of IPs to use for proxy connections.
@@ -22,8 +24,8 @@
 #' @importFrom stringr str_extract
 #' @export
 
-upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
-                                 proxies = NULL, quiet = FALSE) {
+upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
+                           recovery = FALSE, proxies = NULL, quiet = FALSE) {
 
   ### SETUP ####################################################################
 
@@ -169,35 +171,55 @@ upgo_scrape_cl <- function(city, old_results = NULL, recovery = FALSE,
 
     if (!missing(old_results)) {
 
-      updated_results <-
-        old_results %>%
-        filter(city == city_name, url %in% url_list[[n]]) %>%
-        mutate(scraped = Sys.Date())
+      if (old_results_add) {
 
-      old_results <-
-        old_results %>%
-        dplyr::anti_join(updated_results, by = "id") %>%
-        bind_rows(updated_results)
+        active_urls <-
+          old_results %>%
+          # Find listings which were active in the last scrape
+          dplyr::filter(.data$scraped == max(.data$scraped),
+                        .data$city == city_name) %>%
+          # But remove duplicates with newly scraped URLs
+          dplyr::filter(!url %in% url_list[[n]]) %>%
+          dplyr::pull(url)
 
-      url_list[[n]] <-
-        url_list[[n]][!url_list[[n]] %in% updated_results$url]
+        url_list[[n]] <-
+          c(url_list[[n]], active_urls)
 
-      # Advance loop early if there are no new listings
-      if (length(url_list[[n]]) == 0) {
+        if (!quiet) message(crayon::silver(glue::glue(
+          "{length(active_urls)} previously scraped listings to be checked.")))
 
-        listings[[n]] <- NULL
-        results[[n]] <- old_results
+      } else {
+
+        updated_results <-
+          old_results %>%
+          filter(city == city_name, url %in% url_list[[n]]) %>%
+          mutate(scraped = Sys.Date())
+
+        old_results <-
+          old_results %>%
+          dplyr::anti_join(updated_results, by = "id") %>%
+          bind_rows(updated_results)
+
+        url_list[[n]] <-
+          url_list[[n]][!url_list[[n]] %in% updated_results$url]
+
+        # Advance loop early if there are no new listings
+        if (length(url_list[[n]]) == 0) {
+
+          listings[[n]] <- NULL
+          results[[n]] <- old_results
+
+          if (!quiet) message(silver(glue(
+            "{nrow(updated_results)} previously scraped listings still active. ",
+            "No new results to scrape.")))
+
+          next
+        }
 
         if (!quiet) message(silver(glue(
-          "{nrow(updated_results)} previously scraped listings still active. ",
-          "No new results to scrape.")))
+          "{nrow(updated_results)} previously scraped listings still active.")))
 
-        next
       }
-
-      if (!quiet) message(silver(glue(
-        "{nrow(updated_results)} previously scraped listings still active.")))
-
     }
 
 
