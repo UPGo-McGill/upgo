@@ -4,16 +4,10 @@
 \alias{helper_error_kj}
 \title{Helper function to generate error Kijiji output}
 \usage{
-helper_error_kj(.y, city_name)
-}
-\arguments{
-\item{.y}{A single Kijiji URL.}
-
-\item{city_name}{A character scalar indicating the name of the city in which
-the listing is located.}
+helper_error_kj()
 }
 \value{
-A one-row data frame.
+A zero-row data frame.
 }
 \description{
 Helper function to generate error Kijiji output

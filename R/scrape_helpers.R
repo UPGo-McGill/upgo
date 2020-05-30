@@ -260,25 +260,34 @@ helper_parse_kj <- function(.x, .y, city_name) {
   helper_require("rvest")
 
 
-  ### Read listing, and exit early on failure ##################################
+  ### Read listing and establish validity ######################################
 
   .x <-
     tryCatch(xml2::read_html(.x, options = "HUGE"), error = function(e) NULL)
 
+
+  ## If output is NULL, try download again then exit ---------------------------
+
   if (is.null(.x)) {
-    return(helper_error_kj(.y, city_name))
+
+    .x <-
+      tryCatch(
+        xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE"),
+        error = function(e) NULL)
+
+    if (is.null(.x)) return(helper_error_kj())
   }
 
 
-  ### Exit if the input is still not valid #####################################
+  ## Exit if the input is still not valid --------------------------------------
 
   fail <-
     tryCatch({rvest::html_node(.x, "head"); FALSE}, error = function(e) TRUE)
 
-  if (fail) return(helper_error_kj(.y, city_name))
+  if (fail) return(helper_error_kj())
 
 
-  ### Check for 404 redirects and expired links ################################
+  ## Check for 404 redirects and expired links ---------------------------------
 
   # Should be 0 for valid listing, and 2 for 404 redirected
   redirect_check <-
@@ -286,30 +295,99 @@ helper_parse_kj <- function(.x, .y, city_name) {
     rvest::html_node(xpath = 'body[@id = "PageSRP"]') %>%
     length()
 
-  if (redirect_check == 2) return(helper_error_kj(.y, city_name))
+  if (redirect_check == 2) return(helper_error_kj())
 
   expired_check <-
     .x %>%
     rvest::html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
     rvest::html_text()
 
-  if (!is.na(expired_check)) return(helper_error_kj(.y, city_name))
+  if (!is.na(expired_check)) return(helper_error_kj())
 
 
-  ### Parse input ##############################################################
+  ## Check for missing text field ----------------------------------------------
+
+  text_check <-
+    tryCatch({
+      .x %>%
+        rvest::html_node(
+          xpath = '//*[@class = "descriptionContainer-3544745383"]') %>%
+        rvest::html_node('div') %>%
+        rvest::html_text()
+      TRUE},
+    error = function(e) FALSE)
+
+  tries <- 0
+
+  # Listing should be valid by now, so retry download aggressively
+  while(!text_check && tries < 5) {
+
+    tries <- tries + 1
+
+    .x <- xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
+
+    text_check <-
+      tryCatch({
+        .x %>%
+          rvest::html_node(
+            xpath = '//*[@class = "descriptionContainer-3544745383"]') %>%
+          rvest::html_node('div') %>%
+          rvest::html_text()
+        TRUE},
+        error = function(e) FALSE)
+  }
+
+  # If the text field still isn't present, exit function
+  if (!text_check) return(helper_error_kj())
+
 
   ## Find details class --------------------------------------------------------
 
   x_details <-
-    helper_detail_parse(.x)
+    .x %>%
+    rvest::html_node(xpath = '//*[@id="mainPageContent"]') %>%
+    xml2::xml_child(2) %>%
+    rvest::html_text()
 
   # If the field isn't correctly retrieved, try again with fresh download
   if (is.na(x_details)) {
     .x <- xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
 
-    x_details <- helper_detail_parse(.x)
+    x_details <-
+      .x %>%
+      rvest::html_node(xpath = '//*[@id="mainPageContent"]') %>%
+      xml2::xml_child(2) %>%
+      rvest::html_text()
+
+    if (is.na(x_details)) return(helper_error_kj())
   }
 
+
+  ### Parse input ##############################################################
+
+  ## Get bed_bath object -------------------------------------------------------
+
+  bed_bath <- str_extract(x_details, 'Bedrooms.{1,20}Bathrooms[^ ,].{6}')
+
+  bed_field <-
+    bed_bath %>%
+    stringr::str_extract('(?<=Bedrooms).*(?=Bathrooms)') %>%
+    stringr::str_replace(': ', '') %>%
+    stringr::str_trim()
+
+  bath_field <-
+    bed_bath %>%
+    stringr::str_extract('(?<=Bathrooms).*(?=Ov|Fu|Ut|UR)') %>%
+    stringr::str_replace(': ', '') %>%
+    stringr::str_trim()
+
+  if (is.na(bath_field)) {
+    bath_field <-
+      x_details %>%
+      stringr::str_extract('(?<=Bathrooms).{1,5}?(?=Furnished|Overview)') %>%
+      stringr::str_replace(': ', '') %>%
+      stringr::str_trim()
+  }
 
   ## Produce output tibble -----------------------------------------------------
 
@@ -353,14 +431,12 @@ helper_parse_kj <- function(.x, .y, city_name) {
       rvest::html_node(xpath = '//*[@class = "address-3617944557"]') %>%
       rvest::html_text(),
     bedrooms =
-      x_details %>%
-      stringr::str_extract('(?<=coucher|Bedrooms).*(?=Salles|Bathrooms)'),
+      bed_field,
     bathrooms =
-      x_details %>%
-      stringr::str_extract('(?<=bain|Bathrooms).*(?=Meubl|Furnished)'),
+      bath_field,
     furnished =
       x_details %>%
-      stringr::str_extract('(?<=Meubl\u00e9|Furnished).*(?=Animaux|Pet)'),
+      stringr::str_extract('(?<=Meubl\u00e9|Furnished)(Yes|No)'),
     details =
       x_details,
     text =
@@ -377,26 +453,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
           ) %>%
         stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
-    mutate(
-      bedrooms =
-        dplyr::if_else(is.na(.data$bedrooms), {
-          x_details %>%
-            stringr::str_extract(
-              '(?<=Bedrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
-        }, .data$bedrooms),
-      bathrooms =
-        dplyr::if_else(is.na(.data$bathrooms), {
-          x_details %>%
-            stringr::str_extract(
-              '(?<=Bathrooms</dt><dd class=\"twoLinesValue-2815147826">).*?(?=</dd)')
-        }, .data$bathrooms),
-      furnished =
-        dplyr::if_else(is.na(.data$furnished), {
-          x_details %>%
-            stringr::str_extract(
-              '(?<=Furnished</dt><dd class=\"twoLinesValue-2815147826\">).*?(?=</dd)')
-        }, .data$furnished),
-      furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
+    mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
                                  .data$furnished %in% c("Non", "No") ~ FALSE,
                                  is.na(.data$furnished) ~ NA))
 }
@@ -404,34 +461,26 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
 #' Helper function to generate error Kijiji output
 #'
-#' @param .y A single Kijiji URL.
-#' @param city_name A character scalar indicating the name of the city in which
-#' the listing is located.
-#' @return A one-row data frame.
-#' @importFrom dplyr %>% if_else mutate select tibble
+#' @return A zero-row data frame.
 
-helper_error_kj <- function(.y, city_name) {
+helper_error_kj <- function() {
 
-  tibble(
-    id =
-      .y %>%
-      stringr::str_extract('(?<=/)[:digit:]*$'),
-    url =
-      paste0("https://www.kijiji.ca", .y),
-    title = NA_character_,
-    short_long = if_else(stringr::str_detect(
-      url, "v-location-court-terme|v-short-term-rental"), "short", "long"),
-    created = as.Date(NA),
-    scraped = Sys.Date(),
-    price = NA_real_,
-    city = city_name,
-    location = NA_character_,
-    bedrooms = NA_character_,
-    bathrooms = NA_character_,
-    furnished = NA,
-    details = NA_character_,
-    text = NA_character_,
-    photos = vector("list", 1)
+  dplyr::tibble(
+    id = character(),
+    url = character(),
+    title = character(),
+    short_long = character(),
+    created = as.Date(integer(), "1970-01-01"),
+    scraped = as.Date(integer(), "1970-01-01"),
+    price = numeric(),
+    city = character(),
+    location = character(),
+    bedrooms = character(),
+    bathrooms = character(),
+    furnished = logical(),
+    details = character(),
+    text = character(),
+    photos = list()
   )
 
 }

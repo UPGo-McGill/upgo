@@ -42,9 +42,6 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     doFuture::registerDoFuture()
   }
 
-  # Put null progress bar in .upgo_env
-  .upgo_env$pb <- progressor(0)
-
 
   ## Validate city argument ----------------------------------------------------
 
@@ -210,38 +207,24 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     }
 
 
-    ## Process duplicate listings if old_results is provided -------------------
+    ## Augment with previous listings if old_results is provided ---------------
 
     if (!missing(old_results)) {
 
-      updated_results <-
+      active_urls <-
         old_results %>%
-        dplyr::filter(city == city_name, url %in% url_list[[n]]) %>%
-        dplyr::mutate(scraped = Sys.Date())
-
-      old_results <-
-        old_results %>%
-        dplyr::anti_join(updated_results, by = "id") %>%
-        dplyr::bind_rows(updated_results)
+        # Find listings which were active in the last scrape
+        dplyr::filter(.data$scraped == max(.data$scraped),
+                      .data$city == city_name) %>%
+        # But remove duplicates with newly scraped URLs
+        dplyr::filter(!url %in% url_list[[n]]) %>%
+        dplyr::pull(url)
 
       url_list[[n]] <-
-        url_list[[n]][!url_list[[n]] %in% updated_results$url]
-
-      # Advance loop early if there are no new listings
-      if (length(url_list[[n]]) == 0) {
-
-        listings[[n]] <- NULL
-        results[[n]] <- old_results
-
-        if (!quiet) message(crayon::silver(glue::glue(
-          "{nrow(updated_results)} previously scraped listings still active. ",
-          "No new results to scrape.")))
-
-        next
-      }
+        c(url_list[[n]], active_urls)
 
       if (!quiet) message(crayon::silver(glue::glue(
-        "{nrow(updated_results)} previously scraped listings still active.")))
+        "{length(active_urls)} previously scraped listings to be checked.")))
 
     }
 
