@@ -152,6 +152,11 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
         url_list_short <- helper_urls_kj(city_name, "short")
       }
 
+      # Simplify URLs
+      url_list_short <-
+        paste0("https://www.kijiji.ca/v-short-term-rental/",
+               stringr::str_extract(url_list_short, '(?<=/)[:digit:]{5,}'))
+
       # Clean up
       total_time <- Sys.time() - start_time
       time_final_1 <- substr(total_time, 1, 4)
@@ -177,6 +182,12 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       } else {
         url_list_long <- helper_urls_kj(city_name, "long")
       }
+
+      # Simplify URLs
+      url_list_long <-
+        paste0("https://www.kijiji.ca/v-apartments-condos/",
+               stringr::str_extract(url_list_long, '(?<=/)[:digit:]{5,}'))
+
 
       # Clean up
       total_time <- Sys.time() - start_time
