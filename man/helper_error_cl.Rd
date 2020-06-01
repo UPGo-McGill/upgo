@@ -4,16 +4,10 @@
 \alias{helper_error_cl}
 \title{Helper function to generate error Craigslist output}
 \usage{
-helper_error_cl(.y, city_name)
-}
-\arguments{
-\item{.y}{A single Craigslist URL.}
-
-\item{city_name}{A character string indicating the name of the city in which
-the listing is located.}
+helper_error_cl()
 }
 \value{
-A one-row data frame.
+A zero-row data frame.
 }
 \description{
 Helper function to generate error Craigslist output

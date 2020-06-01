@@ -559,9 +559,7 @@ helper_parse_cl <- function(.x, .y, city_name) {
   .x <-
     tryCatch(xml2::read_html(.x, options = "HUGE"), error = function(e) NULL)
 
-  if (is.null(.x)) {
-    return(helper_error_cl(.y, city_name))
-  }
+  if (is.null(.x)) return(helper_error_cl())
 
   # Generate details object
   x_details <-
@@ -606,7 +604,8 @@ helper_parse_cl <- function(.x, .y, city_name) {
     created =
       .x %>%
       rvest::html_node(xpath = '//*[@id="display-date"]/time/@datetime') %>%
-      rvest::html_text(),
+      rvest::html_text() %>%
+      as.Date(origin = "1970-01-01"),
     scraped =
       Sys.Date(),
     price =
@@ -665,32 +664,26 @@ helper_parse_cl <- function(.x, .y, city_name) {
 
 #' Helper function to generate error Craigslist output
 #'
-#' @param .y A single Craigslist URL.
-#' @param city_name A character string indicating the name of the city in which
-#' the listing is located.
-#' @return A one-row data frame.
+#' @return A zero-row data frame.
 #' @importFrom dplyr %>% tibble
 
-helper_error_cl <- function(.y, city_name) {
+helper_error_cl <- function() {
 
-  tibble(
-    id =
-      .y %>%
-      stringr::str_extract('(?<=/)[:digit:]*(?=.html)'),
-    url =
-      .y,
-    title = NA_character_,
-    created = as.Date(NA),
-    scraped = Sys.Date(),
-    price = NA_real_,
-    city = city_name,
-    location = NA_character_,
-    bedrooms = NA_character_,
-    bathrooms = NA_character_,
-    furnished = NA,
-    details = NA_character_,
-    text = NA_character_,
-    photos = vector("list", 1)
+  dplyr::tibble(
+    id = character(),
+    url = character(),
+    title = character(),
+    created = as.Date(integer(), "1970-01-01"),
+    scraped = as.Date(integer(), "1970-01-01"),
+    price = numeric(),
+    city = character(),
+    location = character(),
+    bedrooms = character(),
+    bathrooms = character(),
+    furnished = logical(),
+    details = character(),
+    text = character(),
+    photos = list()
   )
 
 }
