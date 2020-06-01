@@ -60,7 +60,7 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
 
   on.exit({
 
-    results <- bind_rows(results, results_HA)
+    if (exists(results_HA)) results <- bind_rows(results, results_HA)
 
     total_time <- Sys.time() - start_time
 

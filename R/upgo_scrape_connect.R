@@ -13,7 +13,7 @@
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "81.0.4044.69") {
+upgo_scrape_connect <- function(chrome = "83.0.4103.39") {
 
   helper_require("RSelenium")
 
