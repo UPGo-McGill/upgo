@@ -397,10 +397,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
       rvest::html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
       rvest::html_text(),
     url =
-      .x %>%
-      rvest::html_node("head") %>%
-      rvest::html_node(xpath = 'link[@rel = "canonical"]/@href') %>%
-      rvest::html_text(),
+      .y,
     title =
       .x %>%
       rvest::html_node("head") %>%

@@ -217,6 +217,8 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       url_list[[n]] <- url_list_long
     }
 
+    url_list[[n]] <- unique(url_list[[n]])
+
 
     ## Augment with previous listings if old_results is provided ---------------
 

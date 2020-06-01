@@ -2,7 +2,7 @@
 % Please edit documentation in R/upgo_scrape_ab.R
 \name{upgo_scrape_ab}
 \alias{upgo_scrape_ab}
-\title{Function to scrape location information from Airbnb listings}
+\title{Scrape location information from Airbnb listings}
 \usage{
 upgo_scrape_ab(property, proxies = NULL, cores = 1L, quiet = FALSE)
 }
@@ -16,7 +16,7 @@ supplied, this must be at least as long as the number of cores.}
 \item{cores}{A positive integer scalar. How many processing cores should be
 used to scrape?}
 
-\item{quiet}{A logical vector. Should the function execute quietly, or should
+\item{quiet}{A logical scalar Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
 }
 \value{

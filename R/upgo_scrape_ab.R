@@ -1,4 +1,4 @@
-#' Function to scrape location information from Airbnb listings
+#' Scrape location information from Airbnb listings
 #'
 #' \code{upgo_scrape_ab} scrapes location (city, region and country) from
 #' Airbnb listings.
@@ -11,7 +11,7 @@
 #' supplied, this must be at least as long as the number of cores.
 #' @param cores A positive integer scalar. How many processing cores should be
 #' used to scrape?
-#' @param quiet A logical vector. Should the function execute quietly, or should
+#' @param quiet A logical scalar Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with property_ID, city, region, and country, along with the
 #' raw strings used to identify the location and the date on which the scrape
@@ -52,9 +52,6 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
            raw = list(),
            date = Sys.Date())
 
-  # Put null progress bar in .upgo_env
-  .upgo_env$pb <-progressor(0)
-
 
   ### Set initial on.exit statement ############################################
 
@@ -77,11 +74,6 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
     return(results)
 
   })
-
-
-  ### Start Selenium server if it is not already running #######################
-
-  if (!exists("rD", envir = .upgo_env)) upgo_scrape_connect()
 
 
   ### Start clusters and web drivers ###########################################
