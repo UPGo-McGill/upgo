@@ -78,7 +78,8 @@ upgo_scrape_ab <- function(property, proxies = NULL, cores = 1L,
 
   ### Start clusters and web drivers ###########################################
 
-  cl <- parallel::makeCluster(cores)
+  # Need "sequential" here as workaround to R 4 / RStudio 1.3 bug
+  cl <- parallel::makeCluster(cores, setup_strategy = "sequential")
   future::plan(future::cluster, workers = cl, persistent = TRUE)
   doFuture::registerDoFuture()
 
