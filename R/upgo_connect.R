@@ -19,8 +19,12 @@
 #' added to the global environment?
 #' @param host_inactive A logical scalar. Should the host_inactive table (named
 #' `host_inactive_all`) be added to the global environment?
-#' @param reviews A logical scalar. Should the reviews table (named
-#' `reviews_all`) be added to the global environment?
+#' @param review A logical scalar. Should the review table (named
+#' `review_all`) be added to the global environment?
+#' @param review_user A logical scalar. Should the review_user table (named
+#' `review_user_all`) be added to the global environment?
+#' @param review_text A logical scalar. Should the review_text table (named
+#' `review_text_all`) be added to the global environment?
 #' @param remote A logical scalar. Should a remote connection be opened even if
 #' only local tables are being connected?
 #' @return The function returns no output, but makes assignments to the global
@@ -28,17 +32,20 @@
 #' @export
 
 upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
-                         host = TRUE, host_inactive = FALSE, reviews = FALSE,
+                         host = TRUE, host_inactive = FALSE, review = FALSE,
+                         review_user = FALSE, review_text = FALSE,
                          remote = FALSE) {
 
   property_all <- daily_all <- daily_inactive_all <- host_all <-
-    host_inactive_all <- reviews_all <- NULL
+    host_inactive_all <- review_all <- review_user_all <- review_text_all <-
+    NULL
 
   # Check for .con local DB
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
 
   # Decide if remote connection is necessary
-  if (remote | daily_inactive | host_inactive | reviews | !local) {
+  if (remote | daily_inactive | host_inactive | review | review_user |
+      review_text | !local) {
     assign("con",
            {
              RPostgres::dbConnect(
@@ -68,8 +75,12 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
       dplyr::tbl(.upgo_env$con, "daily_inactive")
   if (host_inactive) host_inactive_all <<-
       dplyr::tbl(.upgo_env$con, "host_inactive")
-  if (reviews) reviews_all <<-
-      dplyr::tbl(.upgo_env$con, "reviews")
+  if (review) review_all <<-
+      dplyr::tbl(.upgo_env$con, "review")
+  if (review_user) review_user_all <<-
+      dplyr::tbl(.upgo_env$con, "review_user")
+  if (review_text) review_text_all <<-
+      dplyr::tbl(.upgo_env$con, "review_text")
 
 }
 

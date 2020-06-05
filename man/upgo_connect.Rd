@@ -10,7 +10,9 @@ upgo_connect(
   daily_inactive = FALSE,
   host = TRUE,
   host_inactive = FALSE,
-  reviews = FALSE,
+  review = FALSE,
+  review_user = FALSE,
+  review_text = FALSE,
   remote = FALSE
 )
 }
@@ -30,8 +32,14 @@ added to the global environment?}
 \item{host_inactive}{A logical scalar. Should the host_inactive table (named
 `host_inactive_all`) be added to the global environment?}
 
-\item{reviews}{A logical scalar. Should the reviews table (named
-`reviews_all`) be added to the global environment?}
+\item{review}{A logical scalar. Should the review table (named
+`review_all`) be added to the global environment?}
+
+\item{review_user}{A logical scalar. Should the review_user table (named
+`review_user_all`) be added to the global environment?}
+
+\item{review_text}{A logical scalar. Should the review_text table (named
+`review_text_all`) be added to the global environment?}
 
 \item{remote}{A logical scalar. Should a remote connection be opened even if
 only local tables are being connected?}
