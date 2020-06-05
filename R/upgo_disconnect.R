@@ -4,9 +4,10 @@
 #' removes the associated tables from the global environment.
 #'
 #' A function for disconnecting from the UPGo server and any associated tables.
-#' An open connection with the name `con` will be removed from the global
-#' environment, as will tables named `property_all`, `daily_all`,
-#' `daily_inactive_all`, `host_all`, `host_inactive_all`, and `reviews_all`.
+#' An open connection with the name `con` will be removed from the special upgo
+#' package environment (`.upgo_env`), as will tables named `property_all`,
+#' `daily_all`, #' `daily_inactive_all`, `host_all`, `host_inactive_all`,
+#' `review_all`, #' `review_user_all`, and `review_text_all`.
 #'
 #' @return The function returns no output, but removes objects from the global
 #' environment.
@@ -29,8 +30,14 @@ upgo_disconnect <- function() {
   if (exists("host_inactive_all", envir = .GlobalEnv)) {
     rm("host_inactive_all", envir = .GlobalEnv)}
 
-  if (exists("reviews_all", envir = .GlobalEnv)) {
-    rm("reviews_all", envir = .GlobalEnv)}
+  if (exists("review_all", envir = .GlobalEnv)) {
+    rm("review_all", envir = .GlobalEnv)}
+
+  if (exists("review_user_all", envir = .GlobalEnv)) {
+    rm("review_user_all", envir = .GlobalEnv)}
+
+  if (exists("review_text_all", envir = .GlobalEnv)) {
+    rm("review_text_all", envir = .GlobalEnv)}
 
   if (exists("con", envir = .upgo_env)) {
     rm("con", envir = .upgo_env)}
