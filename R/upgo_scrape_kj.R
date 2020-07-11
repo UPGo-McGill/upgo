@@ -38,7 +38,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     .temp_listings <- .temp_results <- .temp_finished_flag <- NULL
 
   # Prepare for parallel processing
-  if(requireNamespace("doFuture", quietly = TRUE)) {
+  if (requireNamespace("doFuture", quietly = TRUE)) {
     doFuture::registerDoFuture()
   }
 
@@ -147,7 +147,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       handler_upgo("Scraping STR page")
 
       if (!quiet) {
-        with_progress(url_list_short <- helper_urls_kj(city_name, "short"))
+        with_progress({url_list_short <- helper_urls_kj(city_name, "short")})
       } else {
         url_list_short <- helper_urls_kj(city_name, "short")
       }
@@ -178,7 +178,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       handler_upgo("Scraping LTR page")
 
       if (!quiet) {
-        with_progress(url_list_long <- helper_urls_kj(city_name, "long"))
+        with_progress({url_list_long <- helper_urls_kj(city_name, "long")})
       } else {
         url_list_long <- helper_urls_kj(city_name, "long")
       }

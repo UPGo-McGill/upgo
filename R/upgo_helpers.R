@@ -30,8 +30,8 @@ helper_plan <- function() {
       cluster_type <-
         if_else("remote" %in% class(future::plan()), "remote", "local")
       paste0(workers_number, " ", cluster_type, " ", workers_noun)
-      },
-      error = function(e) "1 local process")
+    },
+    error = function(e) "1 local process")
 
   } else return("1 local process")
 }
@@ -139,5 +139,3 @@ check_ip <- function() {
   )
 
 }
-
-

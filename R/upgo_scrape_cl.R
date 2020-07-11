@@ -42,12 +42,12 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
     NULL
 
   # Prepare for parallel processing
-  if(requireNamespace("future", quietly = TRUE)) {
+  if (requireNamespace("future", quietly = TRUE)) {
     doFuture::registerDoFuture()
   }
 
   # Put null progress bar in .upgo_env
-  .upgo_env$pb <-progressor(0)
+  .upgo_env$pb <- progressor(0)
 
 
   ## Validate city argument ----------------------------------------------------
