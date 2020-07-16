@@ -13,6 +13,7 @@ upgo_connect(
   review = FALSE,
   review_user = FALSE,
   review_text = FALSE,
+  geolocation = FALSE,
   remote = FALSE
 )
 }
@@ -40,6 +41,9 @@ added to the global environment?}
 
 \item{review_text}{A logical scalar. Should the review_text table (named
 `review_text_all`) be added to the global environment?}
+
+\item{geolocation}{A logical scalar. Should the geolocation table (named
+`geolocation_remote`) be added to the global environment?}
 
 \item{remote}{A logical scalar. Should a remote connection be opened even if
 only local tables are being connected?}

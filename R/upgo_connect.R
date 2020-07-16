@@ -25,6 +25,8 @@
 #' `review_user_all`) be added to the global environment?
 #' @param review_text A logical scalar. Should the review_text table (named
 #' `review_text_all`) be added to the global environment?
+#' @param geolocation A logical scalar. Should the geolocation table (named
+#' `geolocation_remote`) be added to the global environment?
 #' @param remote A logical scalar. Should a remote connection be opened even if
 #' only local tables are being connected?
 #' @return The function returns no output, but makes assignments to the global
@@ -34,18 +36,18 @@
 upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
                          host = TRUE, host_inactive = FALSE, review = FALSE,
                          review_user = FALSE, review_text = FALSE,
-                         remote = FALSE) {
+                         geolocation = FALSE, remote = FALSE) {
 
   property_all <- daily_all <- daily_inactive_all <- host_all <-
     host_inactive_all <- review_all <- review_user_all <- review_text_all <-
-    NULL
+    geolocation_remote <- NULL
 
   # Check for .con local DB
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
 
   # Decide if remote connection is necessary
   if (remote | daily_inactive | host_inactive | review | review_user |
-      review_text | !local) {
+      review_text | geolocation | !local) {
     assign("con",
            {
              RPostgres::dbConnect(
@@ -81,6 +83,8 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
       dplyr::tbl(.upgo_env$con, "review_user")
   if (review_text) review_text_all <<-
       dplyr::tbl(.upgo_env$con, "review_text")
+  if (geolocation) geolocation_remote <<-
+      dplyr::tbl(.upgo_env$con, "geolocation")
 
 }
 
