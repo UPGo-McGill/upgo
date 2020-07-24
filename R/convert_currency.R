@@ -17,10 +17,11 @@
 #' to a date. A date range will be constructed from the first day of the month
 #' in which `start_date` is located and the last day of the month in which
 #' `end_date` is located.
-#' @return A numeric scalar giving the exchange rate.
+#' @return A table with two columns: `year_month` and `exchange_rate`.
 #' @export
 
-convert_currency <- function(currency_from, currency_to, start_date, end_date) {
+convert_currency <- function(currency_from = "USD", currency_to = "CAD",
+                             start_date, end_date) {
 
   ## Setup ---------------------------------------------------------------------
 
@@ -28,6 +29,7 @@ convert_currency <- function(currency_from, currency_to, start_date, end_date) {
   helper_require("lubridate")
 
   `%m-%` <- lubridate::`%m-%`
+  `%m+%` <- lubridate::`%m+%`
   start_date <- as.Date(start_date)
   end_date <- as.Date(end_date)
 
@@ -44,6 +46,20 @@ convert_currency <- function(currency_from, currency_to, start_date, end_date) {
     year_range * 12 + month_range + 1
 
 
+  ## Get vector of year_month entries ------------------------------------------
+
+  year_month <-
+
+    purrr::map_chr(seq_len(number_of_months), ~{
+
+      date <- start_date %m+% months(.x - 1)
+      substr(date, 1, 7)
+
+      })
+
+
+  ## Get vector of conversion rates --------------------------------------------
+
   result <- purrr::map_dbl(seq_len(number_of_months) - 1, ~{
     ex_table <- fixerapi::fixer_historical(
       date = (end_date %m-% months(.x)),
@@ -52,6 +68,12 @@ convert_currency <- function(currency_from, currency_to, start_date, end_date) {
     ex_table[1,]$value / ex_table[2,]$value
     })
 
-  mean(result)
+
+  ## Construct output ----------------------------------------------------------
+
+  dplyr::tibble(
+    year_month = year_month,
+    exchange_rate = result
+  )
 
 }

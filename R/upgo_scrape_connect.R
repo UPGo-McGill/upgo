@@ -9,19 +9,32 @@
 #'
 #' @param chrome A character string specifying the version of Chrome to be used
 #' with Selenium.
+#' @param proxy A character string. The URL of a proxy server to connect
+#' through.
 #' @return The function returns a connection object, which it assigns to `rD` in
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "83.0.4103.39") {
+upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL) {
 
   helper_require("RSelenium")
 
   rD <- NULL
 
-  eCaps <- list(chromeOptions = list(
-    args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-    w3c = FALSE))
+  if (missing(proxy)) {
+
+    eCaps <- list(chromeOptions = list(
+      args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+      w3c = FALSE))
+
+  } else {
+
+    eCaps <- list(chromeOptions = list(
+      args = c(paste0("--proxy-server=", proxy), '--headless', '--disable-gpu',
+               '--window-size=1280,800'),
+      w3c = FALSE))
+
+  }
 
   message(crayon::silver(glue::glue("Initializing Selenium server.")))
 
@@ -57,7 +70,7 @@ upgo_scrape_disconnect <- function() {
 
   if (exists("remDr")) rm("remDr", envir = .GlobalEnv)
 
-  rm("rD", envir = .upgo_env)
+  if (exists("rD", envir = .upgo_env)) rm("rD", envir = .upgo_env)
 
   gc()
 

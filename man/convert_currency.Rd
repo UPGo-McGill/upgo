@@ -4,7 +4,12 @@
 \alias{convert_currency}
 \title{Function to convert between two currencies}
 \usage{
-convert_currency(currency_from, currency_to, start_date, end_date)
+convert_currency(
+  currency_from = "USD",
+  currency_to = "CAD",
+  start_date,
+  end_date
+)
 }
 \arguments{
 \item{currency_from, currency_to}{A character scalar indicating the currency
@@ -17,7 +22,7 @@ in which `start_date` is located and the last day of the month in which
 `end_date` is located.}
 }
 \value{
-A numeric scalar giving the exchange rate.
+A table with two columns: `year_month` and `exchange_rate`.
 }
 \description{
 \code{convert_currency} produces an exchange rate between two currencies for
