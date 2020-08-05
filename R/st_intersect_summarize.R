@@ -52,7 +52,7 @@ st_intersect_summarize <- function(data, destination, population,
   # Set both tables to the destination CRS
   data <- sf::st_transform(data, sf::st_crs(destination))
 
-  data <- mutate(data, data_area = sf::st_area(.))
+  data <- mutate(data, data_area = sf::st_area(.data$geometry))
 
   intersects <-
     suppressWarnings(sf::st_intersection(data, destination)) %>%
