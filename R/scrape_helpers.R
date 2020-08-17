@@ -98,17 +98,20 @@ helper_urls_kj <- function(city_name, short_long) {
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
 
-  print(check_ip())
+
+  ## Set user agent ------------------------------------------------------------
+
+  httr::set_config(
+    httr::user_agent(paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                            "AppleWebKit/537.36 (KHTML, like Gecko) ",
+                            "Chrome/80.0.3987.149 Safari/537.36")))
 
 
   ## Establish proxy -----------------------------------------------------------
 
-  proxy_flag <- FALSE
-
   if (rlang::env_has(.upgo_env, "proxy_list")) {
-    proxy_flag <- TRUE
     rand <- ceiling(runif(1, 1, length(.upgo_env$proxy_list)))
-    proxy <- .upgo_env$proxy_list[[rand]]
+    httr::use_proxy(.upgo_env$proxy_list[[rand]])
   }
 
 
@@ -150,13 +153,8 @@ helper_urls_kj <- function(city_name, short_long) {
   ## Find number of pages to scrape --------------------------------------------
 
   # Find number of pages to scrape
-  if (proxy_flag) listings_to_scrape <-
-    xml2::read_html(httr::GET(listings_url, httr::use_proxy(proxy))) else {
-      listings_to_scrape <- xml2::read_html(httr::GET(listings_url))
-    }
-
   listings_to_scrape <-
-    listings_to_scrape %>%
+    xml2::read_html(httr::GET(listings_url)) %>%
     rvest::html_node(xpath = '//*[@class="showing"]') %>%
     rvest::html_text() %>%
     stringr::str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
@@ -249,6 +247,11 @@ helper_download_listing <- function(urls) {
         tryCatch(httr::GET(urls[[i]], httr::timeout(1)),
                  error = function(e) {
                    httr::reset_config()
+                   httr::set_config(
+                     httr::user_agent(
+                       paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                              "AppleWebKit/537.36 (KHTML, like Gecko) ",
+                              "Chrome/80.0.3987.149 Safari/537.36")))
                    httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
                                pause_cap = 5, terminate_on = 404)
                    })
@@ -286,6 +289,13 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   helper_require("rvest")
 
+  ## Set user agent ------------------------------------------------------------
+
+  httr::set_config(
+    httr::user_agent(paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                            "AppleWebKit/537.36 (KHTML, like Gecko) ",
+                            "Chrome/80.0.3987.149 Safari/537.36")))
+
 
   ### Read listing and establish validity ######################################
 
@@ -299,7 +309,8 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
     .x <-
       tryCatch(
-        xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE"),
+        xml2::read_html(httr::GET(paste0(.y, "?siteLocale=en_CA")),
+                        options = "HUGE"),
         error = function(e) NULL)
 
     if (is.null(.x)) return(helper_error_kj())
