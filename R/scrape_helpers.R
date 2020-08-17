@@ -17,6 +17,14 @@ helper_urls_cl <- function(city_name) {
   environment(`%do_upgo%`) <- environment()
 
 
+  ## Establish proxy -----------------------------------------------------------
+
+  if (rlang::env_has(.upgo_env, "proxy_list")) {
+    rand <- ceiling(runif(1, 1, length(.upgo_env$proxy_list)))
+    httr::set_config(httr::use_proxy(.upgo_env$proxy_list[[rand]]))
+  }
+
+
   ## Construct listing page URL ------------------------------------------------
 
   listings_url <-
@@ -89,6 +97,14 @@ helper_urls_kj <- function(city_name, short_long) {
 
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
+
+
+  ## Establish proxy -----------------------------------------------------------
+
+  if (rlang::env_has(.upgo_env, "proxy_list")) {
+    rand <- ceiling(runif(1, 1, length(.upgo_env$proxy_list)))
+    httr::set_config(httr::use_proxy(.upgo_env$proxy_list[[rand]]))
+  }
 
 
   ## Construct listing page URL ------------------------------------------------
