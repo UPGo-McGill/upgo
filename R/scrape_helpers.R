@@ -98,6 +98,8 @@ helper_urls_kj <- function(city_name, short_long) {
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
 
+  print(check_ip())
+
 
   ## Establish proxy -----------------------------------------------------------
 
