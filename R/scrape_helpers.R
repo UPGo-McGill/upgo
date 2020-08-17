@@ -28,6 +28,7 @@ helper_urls_cl <- function(city_name) {
 
   listings_to_scrape <-
     listings_url %>%
+    httr::GET() %>%
     xml2::read_html() %>%
     rvest::html_node(".totalcount") %>%
     rvest::html_text()
@@ -129,7 +130,7 @@ helper_urls_kj <- function(city_name, short_long) {
 
   # Find number of pages to scrape
   listings_to_scrape <-
-    xml2::read_html(listings_url) %>%
+    xml2::read_html(httr::GET(listings_url)) %>%
     rvest::html_node(xpath = '//*[@class="showing"]') %>%
     rvest::html_text() %>%
     stringr::str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
@@ -148,7 +149,7 @@ helper_urls_kj <- function(city_name, short_long) {
 
   # Scrape in descending order
   url_list <-
-    foreach (i = seq_len(pages)) %do_upgo% {
+    foreach(i = seq_len(pages)) %do_upgo% {
 
       tryCatch({
         xml2::read_html(httr::GET(paste0(
