@@ -358,12 +358,17 @@ helper_parse_kj <- function(.x, .y, city_name) {
   tries <- 0
 
   # Listing should be valid by now, so retry download aggressively
-  while(!text_check && tries < 5) {
+  while (!text_check && tries < 5) {
 
     tries <- tries + 1
 
-    .x <- xml2::read_html(httr::GET(paste0(.y, "?siteLocale=en_CA")),
-                          options = "HUGE")
+    .x <- xml2::read_html(
+      httr::GET(paste0(.y, "?siteLocale=en_CA"),
+                httr::user_agent(
+                  paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                         "AppleWebKit/537.36 (KHTML, like Gecko) ",
+                         "Chrome/80.0.3987.149 Safari/537.36"))),
+      options = "HUGE")
 
     text_check <-
       tryCatch({
