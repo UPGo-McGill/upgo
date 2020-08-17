@@ -362,7 +362,8 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
     tries <- tries + 1
 
-    .x <- xml2::read_html(paste0(.y, "?siteLocale=en_CA"), options = "HUGE")
+    .x <- xml2::read_html(httr::GET(paste0(.y, "?siteLocale=en_CA")),
+                          options = "HUGE")
 
     text_check <-
       tryCatch({
