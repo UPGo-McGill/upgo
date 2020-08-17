@@ -101,7 +101,10 @@ helper_urls_kj <- function(city_name, short_long) {
 
   ## Establish proxy -----------------------------------------------------------
 
+  proxy_flag <- FALSE
+
   if (rlang::env_has(.upgo_env, "proxy_list")) {
+    proxy_flag <- TRUE
     rand <- ceiling(runif(1, 1, length(.upgo_env$proxy_list)))
     proxy <- .upgo_env$proxy_list[[rand]]
   }
@@ -145,8 +148,13 @@ helper_urls_kj <- function(city_name, short_long) {
   ## Find number of pages to scrape --------------------------------------------
 
   # Find number of pages to scrape
+  if (proxy_flag) listings_to_scrape <-
+    xml2::read_html(httr::GET(listings_url, httr::use_proxy(proxy))) else {
+      listings_to_scrape <- xml2::read_html(httr::GET(listings_url))
+    }
+
   listings_to_scrape <-
-    xml2::read_html(httr::GET(listings_url, httr::use_proxy(proxy))) %>%
+    listings_to_scrape %>%
     rvest::html_node(xpath = '//*[@class="showing"]') %>%
     rvest::html_text() %>%
     stringr::str_extract('(?<= of ).*(?=( Ads)|( results))') %>%
