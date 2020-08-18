@@ -101,10 +101,7 @@ helper_urls_kj <- function(city_name, short_long) {
 
   ## Set user agent ------------------------------------------------------------
 
-  httr::set_config(
-    httr::user_agent(paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
-                            "AppleWebKit/537.36 (KHTML, like Gecko) ",
-                            "Chrome/80.0.3987.149 Safari/537.36")))
+  httr::set_config(httr::user_agent(user_agent))
 
 
   ## Establish proxy -----------------------------------------------------------
@@ -248,10 +245,7 @@ helper_download_listing <- function(urls) {
                  error = function(e) {
                    httr::reset_config()
                    httr::set_config(
-                     httr::user_agent(
-                       paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
-                              "AppleWebKit/537.36 (KHTML, like Gecko) ",
-                              "Chrome/80.0.3987.149 Safari/537.36")))
+                     httr::user_agent(user_agent))
                    httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
                                pause_cap = 5, terminate_on = 404)
                    })
@@ -291,10 +285,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   ## Set user agent ------------------------------------------------------------
 
-  httr::set_config(
-    httr::user_agent(paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
-                            "AppleWebKit/537.36 (KHTML, like Gecko) ",
-                            "Chrome/80.0.3987.149 Safari/537.36")))
+  httr::set_config(httr::user_agent(user_agent))
 
 
   ### Read listing and establish validity ######################################
@@ -363,11 +354,7 @@ helper_parse_kj <- function(.x, .y, city_name) {
     tries <- tries + 1
 
     .x <- xml2::read_html(
-      httr::GET(paste0(.y, "?siteLocale=en_CA"),
-                httr::user_agent(
-                  paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
-                         "AppleWebKit/537.36 (KHTML, like Gecko) ",
-                         "Chrome/80.0.3987.149 Safari/537.36"))),
+      httr::GET(paste0(.y, "?siteLocale=en_CA"), httr::user_agent(user_agent)),
       options = "HUGE")
 
     text_check <-

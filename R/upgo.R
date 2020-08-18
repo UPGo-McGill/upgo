@@ -2,6 +2,10 @@
 
 .upgo_env <- rlang::env()
 
+user_agent <- paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+                     "AppleWebKit/537.36 (KHTML, like Gecko) ",
+                     "Chrome/80.0.3987.149 Safari/537.36")
+
 possible_cities <-
   c("abilene", "akroncanton", "albanyga", "albany", "albuquerque", "altoona",
     "amarillo", "ames", "anchorage", "annapolis", "annarbor", "appleton",

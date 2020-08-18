@@ -45,10 +45,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
 
   ## Set user agent ------------------------------------------------------------
 
-  httr::set_config(
-    httr::user_agent(paste0("Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
-                            "AppleWebKit/537.36 (KHTML, like Gecko) ",
-                            "Chrome/80.0.3987.149 Safari/537.36")))
+  httr::set_config(httr::user_agent(user_agent))
 
 
   ## Validate city argument ----------------------------------------------------
