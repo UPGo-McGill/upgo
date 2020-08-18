@@ -350,9 +350,11 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   # Final check for valid listing
   if (!text_check) {
-    tryCatch({.x <- xml2::read_html(.x, options = "HUGE")},
-             error = function(e) return(helper_error_kj()))
-
+    tryCatch({
+      .x <- xml2::read_html(httr::GET(paste0(.y, "?siteLocale=en_CA"),
+                                      httr::user_agent(user_agent)),
+                            options = "HUGE")},
+      error = function(e) return(helper_error_kj()))
   }
 
 
