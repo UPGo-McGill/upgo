@@ -97,10 +97,6 @@ helper_urls_kj <- function(city_name, short_long) {
 
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
-
-
-  ## Set user agent ------------------------------------------------------------
-
   httr::set_config(httr::user_agent(user_agent))
 
 
@@ -116,7 +112,6 @@ helper_urls_kj <- function(city_name, short_long) {
 
   # STR
   if (short_long == "short") {
-
     city_vec <-
       dplyr::case_when(
         city_name == "Montreal" ~
@@ -126,13 +121,7 @@ helper_urls_kj <- function(city_name, short_long) {
         city_name == "Vancouver" ~
           c("/b-short-term-rental/vancouver/", "c42l1700287")
         )
-
-    listings_url <- paste0(url_start, city_vec[[1]], city_vec[[2]], url_end)
-  }
-
-  # LTR
-  if (short_long %in% c("long", "both")) {
-
+  } else {
     city_vec <-
       dplyr::case_when(
         city_name == "Montreal" ~
@@ -142,9 +131,9 @@ helper_urls_kj <- function(city_name, short_long) {
         city_name == "Vancouver" ~
           c("/b-apartments-condos/vancouver/", "c37l1700287")
         )
-
-    listings_url <- paste0(url_start, city_vec[[1]], city_vec[[2]], url_end)
   }
+
+  listings_url <- paste0(url_start, city_vec[[1]], city_vec[[2]], url_end)
 
 
   ## Find number of pages to scrape --------------------------------------------
@@ -189,7 +178,7 @@ helper_urls_kj <- function(city_name, short_long) {
   if (pages == 100) {
 
     url_list_2 <-
-      foreach (i = seq_len(pages)) %do_upgo% {
+      foreach(i = seq_len(pages)) %do_upgo% {
 
         tryCatch({
           xml2::read_html(httr::GET(paste0(

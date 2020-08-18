@@ -42,9 +42,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     doFuture::registerDoFuture()
   }
 
-
-  ## Set user agent ------------------------------------------------------------
-
+  # Set user agent
   httr::set_config(httr::user_agent(user_agent))
 
 
@@ -148,14 +146,8 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
     if (short_long %in% c("short", "both")) {
 
       start_time <- Sys.time()
-
       handler_upgo("Scraping STR page")
-
-      if (!quiet) {
-        with_progress({url_list_short <- helper_urls_kj(city_name, "short")})
-      } else {
-        url_list_short <- helper_urls_kj(city_name, "short")
-      }
+      with_progress({url_list_short <- helper_urls_kj(city_name, "short")})
 
       # Simplify URLs
       url_list_short <-
@@ -170,29 +162,19 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       if (!quiet) {
         message(crayon::silver(length(url_list_short),
                                "STR listing URLs scraped in "),
-                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))
-      }
-
-    }
+                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))}}
 
     # LTR
     if (short_long %in% c("long", "both")) {
 
       start_time <- Sys.time()
-
       handler_upgo("Scraping LTR page")
-
-      if (!quiet) {
-        with_progress({url_list_long <- helper_urls_kj(city_name, "long")})
-      } else {
-        url_list_long <- helper_urls_kj(city_name, "long")
-      }
+      with_progress({url_list_long <- helper_urls_kj(city_name, "long")})
 
       # Simplify URLs
       url_list_long <-
         paste0("https://www.kijiji.ca/v-apartments-condos/",
                stringr::str_extract(url_list_long, '(?<=/)[:digit:]{5,}'))
-
 
       # Clean up
       total_time <- Sys.time() - start_time
@@ -202,10 +184,7 @@ upgo_scrape_kj <- function(city, old_results = NULL, short_long = "both",
       if (!quiet) {
         message(crayon::silver(length(url_list_long),
                                "LTR listing URLs scraped in "),
-                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))
-      }
-
-    }
+                crayon::cyan(time_final_1, time_final_2), crayon::silver("."))}}
 
 
     ## Combine URLs into single list -------------------------------------------
