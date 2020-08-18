@@ -240,17 +240,9 @@ helper_download_listing <- function(urls) {
 
   listings <-
     foreach::foreach(i = seq_along(urls)) %do_upgo% {
-      tryCatch({
-        tryCatch(httr::GET(urls[[i]], httr::timeout(1)),
-                 error = function(e) {
-                   httr::reset_config()
-                   httr::set_config(
-                     httr::user_agent(user_agent))
-                   httr::RETRY("GET", urls[[i]], times = 5, pause_base = 0.2,
-                               pause_cap = 5, terminate_on = 404)
-                   })
-        },
-        error = function(e) NULL)
+      tryCatch({httr::RETRY("GET", urls[[i]], times = 3, pause_base = 1,
+                            pause_cap = 5, terminate_on = c(403, 404))
+        }, error = function(e) NULL)
   }
 
 
