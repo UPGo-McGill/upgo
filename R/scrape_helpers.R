@@ -348,6 +348,14 @@ helper_parse_kj <- function(.x, .y, city_name) {
 
   tries <- 0
 
+  # Final check for valid listing
+  if (!text_check) {
+    tryCatch({.x <- xml2::read_html(.x, options = "HUGE")},
+             error = function(e) return(helper_error_kj()))
+
+  }
+
+
   # Listing should be valid by now, so retry download aggressively
   while (!text_check && tries < 5) {
 
