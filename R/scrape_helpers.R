@@ -353,29 +353,20 @@ helper_parse_kj <- function(.x, .y, city_name) {
     tryCatch({
       .x <- xml2::read_html(httr::GET(paste0(.y, "?siteLocale=en_CA"),
                                       httr::user_agent(user_agent)),
-                            options = "HUGE")},
+                            options = "HUGE")
+
+      text_check <-
+        tryCatch({
+          .x %>%
+            rvest::html_node(
+              xpath = '//*[@class = "descriptionContainer-3544745383"]') %>%
+            rvest::html_node('div') %>%
+            rvest::html_text()
+          TRUE},
+          error = function(e) FALSE)
+
+      },
       error = function(e) return(helper_error_kj()))
-  }
-
-
-  # Listing should be valid by now, so retry download aggressively
-  while (!text_check && tries < 5) {
-
-    tries <- tries + 1
-
-    .x <- xml2::read_html(
-      httr::GET(paste0(.y, "?siteLocale=en_CA"), httr::user_agent(user_agent)),
-      options = "HUGE")
-
-    text_check <-
-      tryCatch({
-        .x %>%
-          rvest::html_node(
-            xpath = '//*[@class = "descriptionContainer-3544745383"]') %>%
-          rvest::html_node('div') %>%
-          rvest::html_text()
-        TRUE},
-        error = function(e) FALSE)
   }
 
   # If the text field still isn't present, exit function
