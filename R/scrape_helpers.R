@@ -1196,6 +1196,10 @@ helper_parse_ab <- function(scrape_result) {
 }
 
 
+#' Helper function to scrape listing page for Kijiji
+
+#' @param url,user_agent,proxy Arguments passed on from the main function.
+
 helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
 
   url <- tryCatch({url %>% httr::GET(httr::user_agent(user_agent),
@@ -1212,11 +1216,10 @@ helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
       xml2::xml_children() %>%
       rvest::html_attr("href") %>%
       na.omit()
-  } else stop("The server returned a ", url$status_code,
-              " response on page ", i, ".")
+  } else stop("The server returned a ", url$status_code, " response.")
 
   if (length(url) == 0) {
-    stop("The server returned empty results on page ", i, ".")
+    stop("The server returned empty results.")
   }
 
   return(url)

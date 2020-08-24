@@ -21,8 +21,8 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
   helper_require("rvest")
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
-  if (requireNamespace("doFuture", quietly = TRUE)) doFuture::registerDoFuture()
-  `%dopar` <- foreach::`%dopar%`
+  # if (requireNamespace("doFuture", quietly = TRUE)) doFuture::registerDoFuture()
+  # `%dopar` <- foreach::`%dopar%`
 
 
   ## Establish random user_agent and proxy -------------------------------------
@@ -106,7 +106,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
 
     pb <- progressor(steps = pages)
 
-    url_list <- foreach::foreach(i = seq_len(pages)) %dopar% {
+    url_list <- future.apply::future_lapply(seq_len(pages), function(i) {
 
       user_agent <- user_agents[[i %% length(user_agents) + 1]]
       proxy <- NULL
@@ -117,9 +117,9 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
       url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
                     url_end)
 
-      helper_scrape_listing_page_kj(url, user_agent, proxy)
+      upgo:::helper_scrape_listing_page_kj(url, user_agent, proxy)
 
-      }
+      })
 
     })
 
@@ -164,7 +164,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
 
       pb <- progressor(steps = pages)
 
-      url_list_2 <- foreach::foreach(i == seq_len(pages)) %dopar% {
+      url_list <- future.apply::future_lapply(seq_len(pages), function(i) {
 
         user_agent <- user_agents[[i %% length(user_agents) + 1]]
         proxy <- NULL
@@ -177,7 +177,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
 
         helper_scrape_listing_page_kj(url, user_agent, proxy)
 
-      }
+      })
 
     })
 
