@@ -169,8 +169,8 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
         user_agent <- user_agents[[i %% length(user_agents) + 1]]
         proxy <- NULL
         if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
-        pb()
         Sys.sleep(timeout)
+        pb()
 
         url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
                       url_end, "&sort=dateAsc")
