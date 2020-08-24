@@ -1202,26 +1202,26 @@ helper_parse_ab <- function(scrape_result) {
 
 helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
 
-  url <- tryCatch({url %>% httr::GET(httr::user_agent(user_agent),
-                                     httr::use_proxy(proxy))},
-                  error = function(e) NULL)
+  page <- tryCatch({url %>% httr::GET(httr::user_agent(user_agent),
+                                      httr::use_proxy(proxy))},
+                   error = function(e) NULL)
 
-  if (is.null(url)) return(url)
+  if (is.null(page)) return(NULL)
 
-  if (url$status_code == 200) {
-    url <-
-      url %>%
+  if (page$status_code == 200) {
+    page <-
+      page %>%
       xml2::read_html() %>%
       rvest::html_nodes(xpath = '//*[@class="title"]') %>%
       xml2::xml_children() %>%
       rvest::html_attr("href") %>%
       na.omit()
-  } else stop("The server returned a ", url$status_code, " response.")
+  } else stop("The server returned a ", page$status_code, " response.")
 
-  if (length(url) == 0) {
+  if (length(page) == 0) {
     stop("The server returned empty results.")
   }
 
-  return(url)
+  return(page)
 
 }

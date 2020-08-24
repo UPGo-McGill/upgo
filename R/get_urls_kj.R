@@ -3,7 +3,7 @@
 #' \code{get_urls_kj} scrapes Kijiji listing URLs for a city.
 #'
 #' @param city_name A character string: the city to be scraped.
-#' @param short_long A character string, either "short" or "long", to
+#' @param short_long A character string, either "short" or "long" or "both", to
 #' determine whether STR or LTR listing URLs should be scraped.
 #' @param proxies Character vector of IPs to use for proxy connections. If
 #' the length is less than the number of processes set by `future::plan()`,
@@ -11,18 +11,15 @@
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A list of URLs.
-#' @export
 
-get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
-                        quiet = FALSE) {
+get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
+                        proxies = NULL, quiet = FALSE) {
 
   ## Initialize variables and environments -------------------------------------
 
   helper_require("rvest")
   url_start <- "https://www.kijiji.ca"
   url_end <- "?ad=offering&siteLocale=en_CA"
-  # if (requireNamespace("doFuture", quietly = TRUE)) doFuture::registerDoFuture()
-  # `%dopar` <- foreach::`%dopar%`
 
 
   ## Establish random user_agent and proxy -------------------------------------
@@ -93,7 +90,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
     stringr::str_replace(",", "") %>%
     as.integer()
 
-  # Convert listing count into pages
+# Convert listing count into pages
   pages <- min(ceiling(listings_to_scrape / 40), 100)
 
 
@@ -102,61 +99,33 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
   # Scrape in descending order
   handler_upgo("Scraping listing page")
 
+  url_list <- vector("list", pages)
+
   with_progress({
 
     pb <- progressor(steps = pages)
 
-    url_list <- future.apply::future_lapply(seq_len(pages), function(i) {
+    for (i in seq_len(pages)) {
 
       user_agent <- user_agents[[i %% length(user_agents) + 1]]
       proxy <- NULL
       if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
-      Sys.sleep(timeout)
       pb()
 
       url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
                     url_end)
 
-      helper_scrape_listing_page_kj(url, user_agent, proxy)
-
-      })
-
-    })
-
-  # Retry failed scrapes
-  if (sum(sapply(url_list, is.null)) > 0) {
-
-    to_retry <- which(sapply(url_list, is.null))
-    url_retry <- vector("list", length(to_retry))
-
-    message("Retrying ", length(to_retry), " empty pages.")
-
-    for (i in seq_along(to_retry)) {
-
-      user_agent <- user_agents[[i %% length(user_agents) + 1]]
-      proxy <- NULL
-      if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
+      url_list[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
       Sys.sleep(timeout)
 
-      url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
-                    city_vec[[2]], url_end)
-
-      url_retry[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
-
-      }
-
-    # Deal with zero-length edge case
-    if (length(url_retry) == 0) url_retry <- vector("list", length(to_retry))
-
-    # Replace NULLs with new results
-    url_list[which(sapply(url_list, is.null))] <- url_retry
-
-    }
+      }})
 
   url_list <- paste0(url_start, unique(unlist(url_list)))
 
   # If pages == 100, scrape again in ascending order
   if (pages == 100) {
+
+    url_list_2 <- vector("list", pages)
 
     handler_upgo("Scraping (in reverse order) listing page")
 
@@ -164,52 +133,20 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
 
       pb <- progressor(steps = pages)
 
-      url_list <- future.apply::future_lapply(seq_len(pages), function(i) {
+      for (i in seq_len(pages)) {
 
         user_agent <- user_agents[[i %% length(user_agents) + 1]]
         proxy <- NULL
         if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
-        Sys.sleep(timeout)
         pb()
 
         url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
                       url_end, "&sort=dateAsc")
 
-        helper_scrape_listing_page_kj(url, user_agent, proxy)
-
-      })
-
-    })
-
-    # Retry failed scrapes
-    if (sum(sapply(url_list_2, is.null)) > 0) {
-
-      to_retry <- which(sapply(url_list_2, is.null))
-      url_retry <- vector("list", length(to_retry))
-
-      message("Retrying ", length(to_retry), " empty pages.")
-
-      for (i in seq_along(to_retry)) {
-
-        user_agent <- user_agents[[i %% length(user_agents) + 1]]
-        proxy <- NULL
-        if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
+        url_list_2[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
         Sys.sleep(timeout)
 
-        url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
-                      city_vec[[2]], url_end)
-
-        url_retry[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
-
-      }
-
-      # Deal with zero-length edge case
-      if (length(url_retry) == 0) url_retry <- vector("list", length(to_retry))
-
-      # Replace NULLs with new results
-      url_list_2[which(sapply(url_list_2, is.null))] <- url_retry
-
-      }
+      }})
 
     url_list <- unique(c(url_list, paste0(url_start, unlist(url_list_2))))
 
