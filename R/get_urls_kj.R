@@ -145,6 +145,9 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
 
       }
 
+    # Deal with zero-length edge case
+    if (length(url_retry) == 0) url_retry <- vector("list", length(to_retry))
+
     # Replace NULLs with new results
     url_list[which(sapply(url_list, is.null))] <- url_retry
 
@@ -199,6 +202,9 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
         url_retry[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
 
       }
+
+      # Deal with zero-length edge case
+      if (length(url_retry) == 0) url_retry <- vector("list", length(to_retry))
 
       # Replace NULLs with new results
       url_list_2[which(sapply(url_list_2, is.null))] <- url_retry
