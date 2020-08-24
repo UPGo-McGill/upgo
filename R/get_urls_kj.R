@@ -126,7 +126,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
   # Retry failed scrapes
   if (sum(sapply(url_list, is.null)) > 0) {
 
-    message("Retrying ", length(url_retry), " empty pages.")
+    message("Retrying ", sum(sapply(url_list, is.null)), " empty pages.")
 
     url_retry <-
       foreach::foreach(i = which(sapply(url_list, is.null))) %dopar% {
@@ -179,7 +179,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
     # Retry failed scrapes
     if (sum(sapply(url_list_2, is.null)) > 0) {
 
-      message("Retrying ", length(url_retry), " empty pages.")
+      message("Retrying ", sum(sapply(url_list_2, is.null)), " empty pages.")
 
       url_retry <-
         foreach::foreach(i == which(sapply(url_list_2, is.null))) %dopar% {
