@@ -117,7 +117,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
       url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
                     url_end)
 
-      upgo:::helper_scrape_listing_page_kj(url, user_agent, proxy)
+      helper_scrape_listing_page_kj(url, user_agent, proxy)
 
       })
 
