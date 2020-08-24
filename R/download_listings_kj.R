@@ -82,7 +82,7 @@ download_listings_kj <- function(url_list, timeout = 1, proxies = NULL,
     if (mean(purrr::map_lgl(result_list[[i]], is.null)) > 0.75) {
       message("All results are NULL; function exiting early.")
       result_list <- unlist(result_list, recursive = FALSE)
-      result[101:(i * 1000 + 100)] <- result_list
+      result[101:(i * 100 + 100)] <- result_list
       result <- result[seq_along(url_list)]
       return(result)
       }
