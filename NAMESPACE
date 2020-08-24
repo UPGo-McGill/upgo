@@ -3,7 +3,7 @@
 export("%do_upgo%")
 export(check_ip)
 export(convert_currency)
-export(get_urls_kj)
+export(download_listings_kj)
 export(gg_bbox)
 export(reinstall_matchr)
 export(reinstall_strr)
