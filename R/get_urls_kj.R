@@ -127,10 +127,11 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
   if (sum(sapply(url_list, is.null)) > 0) {
 
     to_retry <- which(sapply(url_list, is.null))
+    url_retry <- vector("list", length(to_retry))
 
     message("Retrying ", length(to_retry), " empty pages.")
 
-    url_retry <- foreach::foreach(i = seq_along(to_retry)) %dopar% {
+    for (i in seq_along(to_retry)) {
 
       user_agent <- user_agents[[i %% length(user_agents) + 1]]
       proxy <- NULL
@@ -140,7 +141,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
       url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
                     city_vec[[2]], url_end)
 
-      helper_scrape_listing_page_kj(url, user_agent, proxy)
+      url_retry[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
 
       }
 
@@ -181,10 +182,11 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
     if (sum(sapply(url_list_2, is.null)) > 0) {
 
       to_retry <- which(sapply(url_list_2, is.null))
+      url_retry <- vector("list", length(to_retry))
 
       message("Retrying ", length(to_retry), " empty pages.")
 
-      url_retry <- foreach::foreach(i = seq_along(to_retry)) %dopar% {
+      for (i in seq_along(to_retry)) {
 
         user_agent <- user_agents[[i %% length(user_agents) + 1]]
         proxy <- NULL
@@ -194,7 +196,7 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
         url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
                       city_vec[[2]], url_end)
 
-        helper_scrape_listing_page_kj(url, user_agent, proxy)
+        url_retry[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
 
       }
 
