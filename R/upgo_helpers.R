@@ -79,8 +79,7 @@ check_ip <- function() {
 
 #' Helper function to execute parallel network code with proxies
 #'
-#' The function executes network code in a parallel future
-#' with proxies
+#' The function executes network code in a parallel future with proxies
 #'
 #' @param obj The sequence to iterate over
 #' @param ex An expression to evaluate in parallel

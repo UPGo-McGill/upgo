@@ -1195,3 +1195,30 @@ helper_parse_ab <- function(scrape_result) {
   }
 }
 
+
+helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
+
+  url <- tryCatch({url %>% httr::GET(httr::user_agent(user_agent),
+                                     httr::use_proxy(proxy))},
+                  error = function(e) NULL)
+
+  if (is.null(url)) return(url)
+
+  if (url$status_code == 200) {
+    url <-
+      url %>%
+      xml2::read_html() %>%
+      rvest::html_nodes(xpath = '//*[@class="title"]') %>%
+      xml2::xml_children() %>%
+      rvest::html_attr("href") %>%
+      na.omit()
+  } else stop("The server returned a ", url$status_code,
+              " response on page ", i, ".")
+
+  if (length(url) == 0) {
+    stop("The server returned empty results on page ", i, ".")
+  }
+
+  return(url)
+
+}

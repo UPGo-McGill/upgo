@@ -15,6 +15,5 @@ obj \%do_upgo\% ex
 A list of evaluated expressions.
 }
 \description{
-The function executes network code in a parallel future
-with proxies
+The function executes network code in a parallel future with proxies
 }
