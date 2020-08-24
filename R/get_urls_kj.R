@@ -126,18 +126,19 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
   # Retry failed scrapes
   if (sum(sapply(url_list, is.null)) > 0) {
 
-    message("Retrying ", sum(sapply(url_list, is.null)), " empty pages.")
+    to_retry <- which(sapply(url_list, is.null))
 
-    url_retry <-
-      foreach::foreach(i = which(sapply(url_list, is.null))) %dopar% {
+    message("Retrying ", length(to_retry), " empty pages.")
+
+    url_retry <- foreach::foreach(i = seq_along(to_retry)) %dopar% {
 
       user_agent <- user_agents[[i %% length(user_agents) + 1]]
       proxy <- NULL
       if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
       Sys.sleep(timeout)
 
-      url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
-                    url_end)
+      url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
+                    city_vec[[2]], url_end)
 
       helper_scrape_listing_page_kj(url, user_agent, proxy)
 
@@ -179,22 +180,23 @@ get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
     # Retry failed scrapes
     if (sum(sapply(url_list_2, is.null)) > 0) {
 
-      message("Retrying ", sum(sapply(url_list_2, is.null)), " empty pages.")
+      to_retry <- which(sapply(url_list_2, is.null))
 
-      url_retry <-
-        foreach::foreach(i == which(sapply(url_list_2, is.null))) %dopar% {
+      message("Retrying ", length(to_retry), " empty pages.")
+
+      url_retry <- foreach::foreach(i = seq_along(to_retry)) %dopar% {
 
         user_agent <- user_agents[[i %% length(user_agents) + 1]]
         proxy <- NULL
         if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
         Sys.sleep(timeout)
 
-        url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
-                      url_end, "&sort=dateAsc")
+        url <- paste0(url_start, city_vec[[1]], "page-", to_retry[i], "/",
+                      city_vec[[2]], url_end)
 
         helper_scrape_listing_page_kj(url, user_agent, proxy)
 
-        }
+      }
 
       # Replace NULLs with new results
       url_list_2[which(sapply(url_list_2, is.null))] <- url_retry
