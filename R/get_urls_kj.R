@@ -11,6 +11,7 @@
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A list of URLs.
+#' @export
 
 get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
                         proxies = NULL, quiet = FALSE) {
