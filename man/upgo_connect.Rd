@@ -14,36 +14,40 @@ upgo_connect(
   review_user = FALSE,
   review_text = FALSE,
   geolocation = FALSE,
+  ha_mapping = FALSE,
   remote = FALSE
 )
 }
 \arguments{
 \item{property}{A logical scalar. Should the property table (named
-`property_all`) be added to the global environment?}
+`property_remote`) be added to the global environment?}
 
-\item{daily}{A logical scalar. Should the daily table (named `daily_all`) be
-added to the global environment?}
+\item{daily}{A logical scalar. Should the daily table (named `daily_remote`)
+be added to the global environment?}
 
 \item{daily_inactive}{A logical scalar. Should the daily_inactive table
-(named `daily_inactive_all`) be added to the global environment?}
+(named `daily_inactive_remote`) be added to the global environment?}
 
-\item{host}{A logical scalar. Should the host table (named `host_all`) be
+\item{host}{A logical scalar. Should the host table (named `host_remote`) be
 added to the global environment?}
 
 \item{host_inactive}{A logical scalar. Should the host_inactive table (named
-`host_inactive_all`) be added to the global environment?}
+`host_remote_all`) be added to the global environment?}
 
 \item{review}{A logical scalar. Should the review table (named
-`review_all`) be added to the global environment?}
+`review_remote`) be added to the global environment?}
 
 \item{review_user}{A logical scalar. Should the review_user table (named
-`review_user_all`) be added to the global environment?}
+`review_user_remote`) be added to the global environment?}
 
 \item{review_text}{A logical scalar. Should the review_text table (named
-`review_text_all`) be added to the global environment?}
+`review_text_remote`) be added to the global environment?}
 
 \item{geolocation}{A logical scalar. Should the geolocation table (named
 `geolocation_remote`) be added to the global environment?}
+
+\item{ha_mapping}{A logical scalar. Should the ha_mapping table (named
+`ha_mapping_remote`) be added to the global environment?}
 
 \item{remote}{A logical scalar. Should a remote connection be opened even if
 only local tables are being connected?}

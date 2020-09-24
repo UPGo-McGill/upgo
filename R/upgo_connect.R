@@ -10,23 +10,25 @@
 #' server to the global environment.
 #'
 #' @param property A logical scalar. Should the property table (named
-#' `property_all`) be added to the global environment?
-#' @param daily A logical scalar. Should the daily table (named `daily_all`) be
-#' added to the global environment?
+#' `property_remote`) be added to the global environment?
+#' @param daily A logical scalar. Should the daily table (named `daily_remote`)
+#' be added to the global environment?
 #' @param daily_inactive A logical scalar. Should the daily_inactive table
-#' (named `daily_inactive_all`) be added to the global environment?
-#' @param host A logical scalar. Should the host table (named `host_all`) be
+#' (named `daily_inactive_remote`) be added to the global environment?
+#' @param host A logical scalar. Should the host table (named `host_remote`) be
 #' added to the global environment?
 #' @param host_inactive A logical scalar. Should the host_inactive table (named
-#' `host_inactive_all`) be added to the global environment?
+#' `host_remote_all`) be added to the global environment?
 #' @param review A logical scalar. Should the review table (named
-#' `review_all`) be added to the global environment?
+#' `review_remote`) be added to the global environment?
 #' @param review_user A logical scalar. Should the review_user table (named
-#' `review_user_all`) be added to the global environment?
+#' `review_user_remote`) be added to the global environment?
 #' @param review_text A logical scalar. Should the review_text table (named
-#' `review_text_all`) be added to the global environment?
+#' `review_text_remote`) be added to the global environment?
 #' @param geolocation A logical scalar. Should the geolocation table (named
 #' `geolocation_remote`) be added to the global environment?
+#' @param ha_mapping A logical scalar. Should the ha_mapping table (named
+#' `ha_mapping_remote`) be added to the global environment?
 #' @param remote A logical scalar. Should a remote connection be opened even if
 #' only local tables are being connected?
 #' @return The function returns no output, but makes assignments to the global
@@ -36,11 +38,12 @@
 upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
                          host = TRUE, host_inactive = FALSE, review = FALSE,
                          review_user = FALSE, review_text = FALSE,
-                         geolocation = FALSE, remote = FALSE) {
+                         geolocation = FALSE, ha_mapping = FALSE,
+                         remote = FALSE) {
 
-  property_all <- daily_all <- daily_inactive_all <- host_all <-
-    host_inactive_all <- review_all <- review_user_all <- review_text_all <-
-    geolocation_remote <- NULL
+  property_remote <- daily_remote <- daily_inactive_remote <- host_remote <-
+    host_inactive_remote <- review_remote <- review_user_remote <-
+    review_text_remote <- geolocation_remote <- ha_mapping_remote <- NULL
 
   # Check for .con local DB
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
@@ -61,29 +64,32 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
 
   # Open local connections if possible
   if (local) {
-    if (property) property_all <<- dplyr::tbl(.con, "property")
-    if (daily) daily_all <<- dplyr::tbl(.con, "daily")
-    if (daily_inactive) daily_inactive_all <<-
+    if (property) property_remote <<- dplyr::tbl(.con, "property")
+    if (daily) daily_remote <<- dplyr::tbl(.con, "daily")
+    if (daily_inactive) daily_inactive_remote <<-
         dplyr::tbl(.con, "daily_inactive")
-    if (host) host_all <<- dplyr::tbl(.con, "host")
+    if (host) host_remote <<- dplyr::tbl(.con, "host")
+    if (ha_mapping) ha_mapping_remote <<- dplyr::tbl(.con, "ha_mapping")
 
   # Otherwise open remote connections
   } else {
-    if (property) property_all <<- dplyr::tbl(.upgo_env$con, "property")
-    if (daily) daily_all <<- dplyr::tbl(.upgo_env$con, "daily")
-    if (daily_inactive) daily_inactive_all <<-
+    if (property) property_remote <<- dplyr::tbl(.upgo_env$con, "property")
+    if (daily) daily_remote <<- dplyr::tbl(.upgo_env$con, "daily")
+    if (daily_inactive) daily_inactive_remote <<-
         dplyr::tbl(.upgo_env$con, "daily_inactive")
-    if (host) host_all <<- dplyr::tbl(.upgo_env$con, "host")
+    if (host) host_remote <<- dplyr::tbl(.upgo_env$con, "host")
+    if (ha_mapping) ha_mapping_remote <<-
+        dplyr::tbl(.upgo_env$con, "ha_mapping")
   }
 
   # Open remote connections for tables only hosted remotely
-  if (host_inactive) host_inactive_all <<-
+  if (host_inactive) host_inactive_remote <<-
       dplyr::tbl(.upgo_env$con, "host_inactive")
-  if (review) review_all <<-
+  if (review) review_remote <<-
       dplyr::tbl(.upgo_env$con, "review")
-  if (review_user) review_user_all <<-
+  if (review_user) review_user_remote <<-
       dplyr::tbl(.upgo_env$con, "review_user")
-  if (review_text) review_text_all <<-
+  if (review_text) review_text_remote <<-
       dplyr::tbl(.upgo_env$con, "review_text")
   if (geolocation) geolocation_remote <<-
       dplyr::tbl(.upgo_env$con, "geolocation")
