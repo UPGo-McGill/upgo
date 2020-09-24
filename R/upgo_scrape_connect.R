@@ -11,11 +11,12 @@
 #' with Selenium.
 #' @param proxy A character string. The URL of a proxy server to connect
 #' through.
+#' @param ... Additional arguments passed to RSelenium::rsDriver.
 #' @return The function returns a connection object, which it assigns to `rD` in
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL) {
+upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL, ...) {
 
   helper_require("RSelenium")
 
@@ -43,7 +44,8 @@ upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL) {
                              browser = "chrome",
                              chromever = chrome,
                              extraCapabilities = eCaps,
-                             verbose = FALSE),
+                             verbose = FALSE,
+                             ...),
          envir = .upgo_env)
 }
 

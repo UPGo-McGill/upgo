@@ -4,7 +4,7 @@
 \alias{upgo_scrape_connect}
 \title{Function to open Selenium server for webscraping}
 \usage{
-upgo_scrape_connect(chrome = "83.0.4103.39", proxy = NULL)
+upgo_scrape_connect(chrome = "83.0.4103.39", proxy = NULL, ...)
 }
 \arguments{
 \item{chrome}{A character string specifying the version of Chrome to be used
@@ -12,6 +12,8 @@ with Selenium.}
 
 \item{proxy}{A character string. The URL of a proxy server to connect
 through.}
+
+\item{...}{Additional arguments passed to RSelenium::rsDriver.}
 }
 \value{
 The function returns a connection object, which it assigns to `rD` in
