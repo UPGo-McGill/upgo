@@ -1225,3 +1225,77 @@ helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
   return(page)
 
 }
+
+
+
+#' Helper function to scrape registration information from an Airbnb listing
+#'
+#' \code{helper_scrape_ab_registration} scrapes the registration number from a
+#' single Airbnb listing and forwards to the calling function for further
+#' processing.
+#'
+#' @param PID An Airbnb property ID to be scraped.
+
+helper_scrape_ab_registration <- function(PID) {
+
+  ### Initialize objects #######################################################
+
+  scrape_result <-
+    dplyr::tibble(property_ID = character(), registration = character())
+  scrape_result[1, 1] <- paste0("ab-", PID)
+
+
+  ### Navigate to listing and verify it is loaded ##############################
+
+  remDr$setImplicitWaitTimeout(0)
+  remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID))
+
+  load_check <- FALSE
+  iters <- 0
+
+  while (!load_check && iters <= 5) {
+
+    iters <- iters + 1
+
+    load_check <-
+      suppressMessages(
+        tryCatch({
+          # This element is only true once the page is loaded
+          remDr$findElement("xpath", '//*[@data-triggered = "true"]')
+          TRUE
+        }, error = function(e) {
+          # If the key element is loaded, wait one second then try again
+          Sys.sleep(1)
+          FALSE
+        }
+        ))
+  }
+
+  ### Return NULL if the listing hasn't loaded in 5 seconds ####################
+
+  if (!load_check) return(NULL)
+
+
+  ### Test URL for missing listing and exit early if so ########################
+
+  if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
+
+    scrape_result[1,]$raw <- list("NO LISTING")
+    scrape_result[1,]$note <- "no_listing"
+
+    return(scrape_result)
+  }
+
+
+  ### Get field ################################################################
+
+  reg <- remDr$findElements("class", "_1y6fhhr")
+  reg <- reg[[1]]$getElementAttribute("outerHTML")[[1]]
+  reg <- stringr::str_extract(reg, paste0("(?<=Licence number</span><br>)",
+                                          ".*(?=</span></div>)"))
+
+  scrape_result[1,]$registration <- reg
+
+  return(scrape_result)
+
+}

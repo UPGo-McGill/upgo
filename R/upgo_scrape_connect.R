@@ -16,7 +16,7 @@
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL, ...) {
+upgo_scrape_connect <- function(chrome = "85.0.4183.87", proxy = NULL, ...) {
 
   helper_require("RSelenium")
 
@@ -44,6 +44,7 @@ upgo_scrape_connect <- function(chrome = "83.0.4103.39", proxy = NULL, ...) {
                              browser = "chrome",
                              chromever = chrome,
                              extraCapabilities = eCaps,
+                             check = FALSE,
                              verbose = FALSE,
                              ...),
          envir = .upgo_env)
