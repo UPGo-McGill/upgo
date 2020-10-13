@@ -1241,8 +1241,9 @@ helper_scrape_ab_registration <- function(PID) {
   ### Initialize objects #######################################################
 
   scrape_result <-
-    dplyr::tibble(property_ID = character(), registration = character())
-  scrape_result[1, 1] <- paste0("ab-", PID)
+    dplyr::tibble(property_ID = paste0("ab-", PID),
+                  registration = "NO LISTING",
+                  date = Sys.Date())
 
 
   ### Navigate to listing and verify it is loaded ##############################
@@ -1279,9 +1280,6 @@ helper_scrape_ab_registration <- function(PID) {
   ### Test URL for missing listing and exit early if so ########################
 
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
-
-    scrape_result[1,]$raw <- list("NO LISTING")
-    scrape_result[1,]$note <- "no_listing"
 
     return(scrape_result)
   }
