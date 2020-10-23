@@ -18,7 +18,8 @@ removes the associated tables from the global environment.
 A function for disconnecting from the UPGo server and any associated tables.
 An open connection with the name `con` will be removed from the special upgo
 package environment (`.upgo_env`), as will tables named `property_remote`,
-`daily_remote`, `daily_inactive_remote`, `host_remote`,
-`host_inactive_remote`, `review_remote`, `review_user_remote`,
-`review_text_remote`, `geolocation_remote` and `ha_mapping_remote`.
+`property_inactive_remote`, `daily_remote`, `daily_inactive_remote`,
+`host_remote`, #' `host_inactive_remote`, `review_remote`,
+`review_user_remote`, `review_text_remote`, `geolocation_remote` and
+`ha_mapping_remote`.
 }

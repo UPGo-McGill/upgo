@@ -6,6 +6,7 @@
 \usage{
 upgo_connect(
   property = TRUE,
+  property_inactive = FALSE,
   daily = TRUE,
   daily_inactive = FALSE,
   host = TRUE,
@@ -21,6 +22,9 @@ upgo_connect(
 \arguments{
 \item{property}{A logical scalar. Should the property table (named
 `property_remote`) be added to the global environment?}
+
+\item{property_inactive}{A logical scalar. Should the property_inactive table
+(named `property_inactive_remote`) be added to the global environment?}
 
 \item{daily}{A logical scalar. Should the daily table (named `daily_remote`)
 be added to the global environment?}

@@ -11,6 +11,8 @@
 #'
 #' @param property A logical scalar. Should the property table (named
 #' `property_remote`) be added to the global environment?
+#' @param property_inactive A logical scalar. Should the property_inactive table
+#' (named `property_inactive_remote`) be added to the global environment?
 #' @param daily A logical scalar. Should the daily table (named `daily_remote`)
 #' be added to the global environment?
 #' @param daily_inactive A logical scalar. Should the daily_inactive table
@@ -35,22 +37,23 @@
 #' environment.
 #' @export
 
-upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
-                         host = TRUE, host_inactive = FALSE, review = FALSE,
+upgo_connect <- function(property = TRUE, property_inactive = FALSE,
+                         daily = TRUE, daily_inactive = FALSE, host = TRUE,
+                         host_inactive = FALSE, review = FALSE,
                          review_user = FALSE, review_text = FALSE,
                          geolocation = FALSE, ha_mapping = FALSE,
                          remote = FALSE) {
 
-  property_remote <- daily_remote <- daily_inactive_remote <- host_remote <-
-    host_inactive_remote <- review_remote <- review_user_remote <-
-    review_text_remote <- geolocation_remote <- ha_mapping_remote <- NULL
+  property_remote <- property_inactive_remote <- daily_remote <-
+    daily_inactive_remote <- host_remote <- host_inactive_remote <-
+    review_remote <- review_user_remote <- review_text_remote <-
+    geolocation_remote <- ha_mapping_remote <- NULL
 
   # Check for .con local DB
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
 
   # Decide if remote connection is necessary
-  if (remote | host_inactive | review | review_user | review_text |
-      geolocation | !local) {
+  if (remote | review | review_user | review_text | geolocation | !local) {
     assign("con",
            {
              RPostgres::dbConnect(
@@ -65,26 +68,32 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
   # Open local connections if possible
   if (local) {
     if (property) property_remote <<- dplyr::tbl(.con, "property")
+    if (property_inactive) property_inactive_remote <<-
+        dplyr::tbl(.con, "property_inactive")
     if (daily) daily_remote <<- dplyr::tbl(.con, "daily")
     if (daily_inactive) daily_inactive_remote <<-
         dplyr::tbl(.con, "daily_inactive")
     if (host) host_remote <<- dplyr::tbl(.con, "host")
+    if (host_inactive) host_inactive_remote <<-
+        dplyr::tbl(.con, "host_inactive")
     if (ha_mapping) ha_mapping_remote <<- dplyr::tbl(.con, "ha_mapping")
 
   # Otherwise open remote connections
   } else {
     if (property) property_remote <<- dplyr::tbl(.upgo_env$con, "property")
+    if (property_inactive) property_inactive_remote <<-
+        dplyr::tbl(.ugpo_env$con, "property_inactive")
     if (daily) daily_remote <<- dplyr::tbl(.upgo_env$con, "daily")
     if (daily_inactive) daily_inactive_remote <<-
         dplyr::tbl(.upgo_env$con, "daily_inactive")
     if (host) host_remote <<- dplyr::tbl(.upgo_env$con, "host")
+    if (host_inactive) host_inactive_remote <<-
+        dplyr::tbl(.upgo_env$con, "host_inactive")
     if (ha_mapping) ha_mapping_remote <<-
         dplyr::tbl(.upgo_env$con, "ha_mapping")
   }
 
   # Open remote connections for tables only hosted remotely
-  if (host_inactive) host_inactive_remote <<-
-      dplyr::tbl(.upgo_env$con, "host_inactive")
   if (review) review_remote <<-
       dplyr::tbl(.upgo_env$con, "review")
   if (review_user) review_user_remote <<-
@@ -95,4 +104,3 @@ upgo_connect <- function(property = TRUE, daily = TRUE, daily_inactive = FALSE,
       dplyr::tbl(.upgo_env$con, "geolocation")
 
 }
-
