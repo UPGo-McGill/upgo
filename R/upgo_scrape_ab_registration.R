@@ -44,8 +44,9 @@ upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
 
   results <-
     tibble(property_ID = character(),
-           registration = character(),
-           date = Sys.Date())
+           date = Sys.Date(),
+           registration = character()
+           )
 
 
   ### Set initial on.exit statement ############################################
