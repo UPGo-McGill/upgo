@@ -31,6 +31,8 @@
 #' `geolocation_remote`) be added to the global environment?
 #' @param ha_mapping A logical scalar. Should the ha_mapping table (named
 #' `ha_mapping_remote`) be added to the global environment?
+#' @param registration A logical scalar. Should the registration table (named
+#' `registration_remote`) be added to the global environment?
 #' @param remote A logical scalar. Should a remote connection be opened even if
 #' only local tables are being connected?
 #' @return The function returns no output, but makes assignments to the global
@@ -42,12 +44,12 @@ upgo_connect <- function(property = TRUE, property_inactive = FALSE,
                          host_inactive = FALSE, review = FALSE,
                          review_user = FALSE, review_text = FALSE,
                          geolocation = FALSE, ha_mapping = FALSE,
-                         remote = FALSE) {
+                         registration = FALSE, remote = FALSE) {
 
   property_remote <- property_inactive_remote <- daily_remote <-
     daily_inactive_remote <- host_remote <- host_inactive_remote <-
     review_remote <- review_user_remote <- review_text_remote <-
-    geolocation_remote <- ha_mapping_remote <- NULL
+    geolocation_remote <- ha_mapping_remote <- registration_remote <- NULL
 
   # Check for .con local DB
   if (exists(".con", envir = .GlobalEnv)) local <- TRUE else local <- FALSE
@@ -77,6 +79,7 @@ upgo_connect <- function(property = TRUE, property_inactive = FALSE,
     if (host_inactive) host_inactive_remote <<-
         dplyr::tbl(.con, "host_inactive")
     if (ha_mapping) ha_mapping_remote <<- dplyr::tbl(.con, "ha_mapping")
+    if (registration) registration_remote <<- dplyr::tbl(.con, "registration")
 
   # Otherwise open remote connections
   } else {
@@ -91,6 +94,9 @@ upgo_connect <- function(property = TRUE, property_inactive = FALSE,
         dplyr::tbl(.upgo_env$con, "host_inactive")
     if (ha_mapping) ha_mapping_remote <<-
         dplyr::tbl(.upgo_env$con, "ha_mapping")
+    if (registration) registration_remote <<-
+        dplyr::tbl(.upgo_env$con, "registration")
+
   }
 
   # Open remote connections for tables only hosted remotely

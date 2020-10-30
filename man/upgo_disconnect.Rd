@@ -20,6 +20,6 @@ An open connection with the name `con` will be removed from the special upgo
 package environment (`.upgo_env`), as will tables named `property_remote`,
 `property_inactive_remote`, `daily_remote`, `daily_inactive_remote`,
 `host_remote`, #' `host_inactive_remote`, `review_remote`,
-`review_user_remote`, `review_text_remote`, `geolocation_remote` and
-`ha_mapping_remote`.
+`review_user_remote`, `review_text_remote`, `geolocation_remote`,
+`ha_mapping_remote` and `registration_remote`.
 }

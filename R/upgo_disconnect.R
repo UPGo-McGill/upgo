@@ -8,8 +8,8 @@
 #' package environment (`.upgo_env`), as will tables named `property_remote`,
 #' `property_inactive_remote`, `daily_remote`, `daily_inactive_remote`,
 #' `host_remote`, #' `host_inactive_remote`, `review_remote`,
-#' `review_user_remote`, `review_text_remote`, `geolocation_remote` and
-#' `ha_mapping_remote`.
+#' `review_user_remote`, `review_text_remote`, `geolocation_remote`,
+#' `ha_mapping_remote` and `registration_remote`.
 #'
 #' @return The function returns no output, but removes objects from the global
 #' environment.
@@ -49,6 +49,9 @@ upgo_disconnect <- function() {
 
   if (exists("ha_mapping_remote", envir = .GlobalEnv)) {
     rm("ha_mapping_remote", envir = .GlobalEnv)}
+
+  if (exists("registration_remote", envir = .GlobalEnv)) {
+    rm("registration_remote", envir = .GlobalEnv)}
 
   if (exists("con", envir = .upgo_env)) {
     rm("con", envir = .upgo_env)}

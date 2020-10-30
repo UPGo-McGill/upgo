@@ -16,6 +16,7 @@ upgo_connect(
   review_text = FALSE,
   geolocation = FALSE,
   ha_mapping = FALSE,
+  registration = FALSE,
   remote = FALSE
 )
 }
@@ -52,6 +53,9 @@ added to the global environment?}
 
 \item{ha_mapping}{A logical scalar. Should the ha_mapping table (named
 `ha_mapping_remote`) be added to the global environment?}
+
+\item{registration}{A logical scalar. Should the registration table (named
+`registration_remote`) be added to the global environment?}
 
 \item{remote}{A logical scalar. Should a remote connection be opened even if
 only local tables are being connected?}
