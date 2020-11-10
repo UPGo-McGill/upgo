@@ -46,9 +46,6 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
     doFuture::registerDoFuture()
   }
 
-  # Put null progress bar in .upgo_env
-  .upgo_env$pb <- progressor(0)
-
 
   ## Validate city argument ----------------------------------------------------
 
@@ -263,11 +260,11 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
       if (!quiet) {
         with_progress({
-          .upgo_env$pb <- progressor(along = listings[[n]])
+          pb <- progressor(along = listings[[n]])
 
           results[[n]] <-
             furrr::future_map2_dfr(listings[[n]], url_list[[n]], ~{
-              .upgo_env$pb()
+              pb()
               helper_parse_cl(.x, .y, city_name)
             })})
 
@@ -280,11 +277,11 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
       if (!quiet) {
         with_progress({
-          .upgo_env$pb <- progressor(along = listings[[n]])
+          pb <- progressor(along = listings[[n]])
 
           results[[n]] <-
             purrr::map2_dfr(listings[[n]], url_list[[n]], ~{
-              .upgo_env$pb()
+              pb()
               helper_parse_cl(.x, .y, city_name)
             })})
 
