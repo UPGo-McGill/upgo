@@ -4,10 +4,12 @@
 \alias{helper_urls_cl}
 \title{Helper function to scrape Craigslist listing URLs}
 \usage{
-helper_urls_cl(city_name)
+helper_urls_cl(city_name, proxies = NULL)
 }
 \arguments{
 \item{city_name}{A character string: the city to be scraped.}
+
+\item{proxies}{Character vector of IPs to use for proxy connections.}
 }
 \value{
 A list of URLs.

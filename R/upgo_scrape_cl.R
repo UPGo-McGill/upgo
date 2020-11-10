@@ -145,10 +145,9 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
     start_time <- Sys.time()
 
-    handler_upgo("Scraping page")
-
+    # Temporarily the same
     if (!quiet) {
-      with_progress(url_list[[n]] <- helper_urls_cl(city_name))
+      url_list[[n]] <- helper_urls_cl(city_name)
     } else {
       url_list[[n]] <- helper_urls_cl(city_name)
     }
@@ -226,17 +225,14 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
     handler_upgo("Scraping listing")
 
+    # Temporarily the same
     if (!quiet) {
-      with_progress(
-        listings[[n]] <-
-          paste0(url_list[[n]], "?lang=en&cc=us") %>%
-          helper_download_listing()
-      )
+      listings[[n]] <- helper_download_listing(paste0(url_list[[n]],
+                                                      "?lang=en&cc=us"))
 
     } else {
-      listings[[n]] <-
-        paste0(url_list[[n]], "?lang=en&cc=us") %>%
-        helper_download_listing()
+      listings[[n]] <- helper_download_listing(paste0(url_list[[n]],
+                                                      "?lang=en&cc=us"))
     }
 
     # Clean up
@@ -329,10 +325,6 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
   ### RBIND AND RETURN RESULTS #################################################
 
   results <- bind_rows(results)
-
-  if (!missing(proxies)) {
-    on.exit(rlang::env_unbind(.upgo_env, "proxy_list"))
-  } else on.exit()
 
   return(results)
 

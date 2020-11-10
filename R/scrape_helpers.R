@@ -3,25 +3,22 @@
 #' \code{helper_urls_cl} scrapes Craigslist listing URLs for a city.
 #'
 #' @param city_name A character string: the city to be scraped.
+#' @param proxies Character vector of IPs to use for proxy connections.
 #' @importFrom progressr handlers handler_progress progressor
-#' @importFrom stats na.omit
 #' @return A list of URLs.
 
-helper_urls_cl <- function(city_name) {
+helper_urls_cl <- function(city_name, proxies = NULL) {
 
   helper_require("rvest")
-
-
-  ## Define environment for %do_upgo% function ---------------------------------
-
-  environment(`%do_upgo%`) <- environment()
+  doParallel::registerDoParallel()
+  `%do_par%` <- foreach::`%dopar%`
 
 
   ## Establish proxy -----------------------------------------------------------
 
-  if (rlang::env_has(.upgo_env, "proxy_list")) {
-    rand <- ceiling(runif(1, 1, length(.upgo_env$proxy_list)))
-    httr::set_config(httr::use_proxy(.upgo_env$proxy_list[[rand]]))
+  if (!missing(proxies)) {
+    rand <- ceiling(runif(1, 1, length(proxies)))
+    httr::set_config(httr::use_proxy(proxies[[rand]]))
   }
 
 
@@ -44,30 +41,41 @@ helper_urls_cl <- function(city_name) {
   pages <- ceiling(as.numeric(listings_to_scrape) / 120)
 
 
-  ## Prepare progress reporting ------------------------------------------------
-
-  .upgo_env$pb <- progressor(steps = pages)
-
-
   ## Scrape pages --------------------------------------------------------------
 
-  url_list <-
-    foreach::foreach(i = seq_len(pages)) %do_upgo% {
-      tryCatch({
-        xml2::read_html(httr::GET(paste0(
-          "https://", city_name, ".craigslist.org/search/apa?s=",
-          120 * (i - 1), "&lang=en&cc=us"))) %>%
-          rvest::html_nodes(".result-row") %>%
-          xml2::xml_children() %>%
-          rvest::html_attr("href") %>%
-          na.omit()
-      }, error = function(e) NULL)
-    }
+  handler_upgo("Scraping page")
+
+  progressr::with_progress({
+
+    pb <- progressor(steps = pages)
+
+    url_list <-
+      foreach::foreach(i = seq_len(pages)) %do_par% {
+
+        # if (!missing(proxies)) {
+          httr::set_config(httr::use_proxy(
+            proxies[[(i %% length(proxies)) + 1]]))
+        # }
+
+        pb()
+
+        tryCatch({
+          xml2::read_html(httr::GET(paste0(
+            "https://", city_name, ".craigslist.org/search/apa?s=",
+            120 * (i - 1), "&lang=en&cc=us"))) %>%
+            rvest::html_nodes(".result-row") %>%
+            xml2::xml_children() %>%
+            rvest::html_attr("href") %>%
+            stats::na.omit()
+        }, error = function(e) NULL)
+      }
+
+  })
 
 
   ## Merge and clean up list ---------------------------------------------------
 
-  url_list <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
+  url_list  <- unique(unlist(url_list)) %>% str_replace("\\?.*", "")
 
   return(url_list)
 
@@ -168,7 +176,7 @@ helper_urls_kj <- function(city_name, short_long) {
           rvest::html_nodes(xpath = '//*[@class="title"]') %>%
           xml2::xml_children() %>%
           rvest::html_attr("href") %>%
-          na.omit()
+          stats::na.omit()
       }, error = function(e) NULL)
     }
 
@@ -187,7 +195,7 @@ helper_urls_kj <- function(city_name, short_long) {
             rvest::html_nodes(xpath = '//*[@class="title"]') %>%
             xml2::xml_children() %>%
             rvest::html_attr("href") %>%
-            na.omit()
+            stats::na.omit()
         }, error = function(e) NULL)
       }
 
@@ -213,26 +221,32 @@ helper_urls_kj <- function(city_name, short_long) {
 helper_download_listing <- function(urls) {
 
   helper_require("rvest")
-
-
-  ## Define environment for %do_upgo% function ---------------------------------
-
-  environment(`%do_upgo%`) <- environment()
-
-
-  ## Prepare progress reporting ------------------------------------------------
-
-  .upgo_env$pb <- progressor(along = urls)
+  doParallel::registerDoParallel()
+  `%do_par%` <- foreach::`%dopar%`
 
 
   ## Scrape listings -----------------------------------------------------------
 
-  listings <-
-    foreach::foreach(i = seq_along(urls)) %do_upgo% {
-      tryCatch({httr::RETRY("GET", urls[[i]], times = 3, pause_base = 1,
-                            pause_cap = 5, terminate_on = c(403, 404))
+  progressr::with_progress({
+
+    pb <- progressr::progressor(along = urls)
+
+    listings <-
+      foreach::foreach(i = seq_along(urls)) %do_par% {
+
+        pb()
+
+        # if (!missing(proxies)) {
+        httr::set_config(httr::use_proxy(
+          proxies[[(i %% length(proxies)) + 1]]))
+        # }
+
+        tryCatch({httr::RETRY("GET", urls[[i]], times = 3, pause_base = 1,
+                              pause_cap = 5, terminate_on = c(403, 404))
         }, error = function(e) NULL)
-  }
+      }
+
+  })
 
 
   ## Clean up and exit ---------------------------------------------------------
@@ -1215,7 +1229,7 @@ helper_scrape_listing_page_kj <- function(url, user_agent, proxy) {
       rvest::html_nodes(xpath = '//*[@class="title"]') %>%
       xml2::xml_children() %>%
       rvest::html_attr("href") %>%
-      na.omit()
+      stats::na.omit()
   } else stop("The server returned a ", page$status_code, " response.")
 
   if (length(page) == 0) {
@@ -1242,8 +1256,9 @@ helper_scrape_ab_registration <- function(PID) {
 
   scrape_result <-
     dplyr::tibble(property_ID = paste0("ab-", PID),
-                  registration = "NO LISTING",
-                  date = Sys.Date())
+                  date = Sys.Date(),
+                  registration = "NO LISTING"
+                  )
 
 
   ### Navigate to listing and verify it is loaded ##############################
