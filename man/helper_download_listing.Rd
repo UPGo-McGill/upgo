@@ -4,10 +4,12 @@
 \alias{helper_download_listing}
 \title{Helper function to download Craigslist or Kijiji listings}
 \usage{
-helper_download_listing(urls)
+helper_download_listing(urls, proxies = NULL)
 }
 \arguments{
 \item{urls}{A character vector of URLs to be scraped.}
+
+\item{proxies}{TKTK}
 }
 \value{
 A list of HTML objects.

@@ -147,9 +147,9 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
     # Temporarily the same
     if (!quiet) {
-      url_list[[n]] <- helper_urls_cl(city_name)
+      url_list[[n]] <- helper_urls_cl(city_name, proxies)
     } else {
-      url_list[[n]] <- helper_urls_cl(city_name)
+      url_list[[n]] <- helper_urls_cl(city_name, proxies)
     }
 
     # Clean up
@@ -227,12 +227,12 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
 
     # Temporarily the same
     if (!quiet) {
-      listings[[n]] <- helper_download_listing(paste0(url_list[[n]],
-                                                      "?lang=en&cc=us"))
+      listings[[n]] <- helper_download_listing(
+        paste0(url_list[[n]], "?lang=en&cc=us"), proxies)
 
     } else {
-      listings[[n]] <- helper_download_listing(paste0(url_list[[n]],
-                                                      "?lang=en&cc=us"))
+      listings[[n]] <- helper_download_listing(
+        paste0(url_list[[n]], "?lang=en&cc=us"), proxies)
     }
 
     # Clean up

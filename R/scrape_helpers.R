@@ -213,12 +213,13 @@ helper_urls_kj <- function(city_name, short_long) {
 #' \code{helper_download_listing} scrapes listings from a list of URLs.
 #'
 #' @param urls A character vector of URLs to be scraped.
+#' @param proxies TKTK
 #' @return A list of HTML objects.
 #' @importFrom dplyr %>% if_else mutate select tibble
 #' @importFrom purrr map_dfr
 #' @importFrom stringr str_detect
 
-helper_download_listing <- function(urls) {
+helper_download_listing <- function(urls, proxies = NULL) {
 
   helper_require("rvest")
   doParallel::registerDoParallel()
