@@ -4,7 +4,7 @@
 \alias{upgo_scrape_connect}
 \title{Function to open Selenium server for webscraping}
 \usage{
-upgo_scrape_connect(chrome = "85.0.4183.87", proxy = NULL, ...)
+upgo_scrape_connect(chrome = "87.0.4280.88", proxy = NULL, ...)
 }
 \arguments{
 \item{chrome}{A character string specifying the version of Chrome to be used

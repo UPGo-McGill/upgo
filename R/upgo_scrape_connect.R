@@ -16,7 +16,7 @@
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "85.0.4183.87", proxy = NULL, ...) {
+upgo_scrape_connect <- function(chrome = "87.0.4280.88", proxy = NULL, ...) {
 
   helper_require("RSelenium")
 
@@ -25,14 +25,16 @@ upgo_scrape_connect <- function(chrome = "85.0.4183.87", proxy = NULL, ...) {
   if (missing(proxy)) {
 
     eCaps <- list(chromeOptions = list(
-      args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
+      args = c('--headless', '--disable-gpu', '--window-size=1280,800',
+               '--disable-backgrounding-occluded-windows'),
       w3c = FALSE))
 
   } else {
 
     eCaps <- list(chromeOptions = list(
       args = c(paste0("--proxy-server=", proxy), '--headless', '--disable-gpu',
-               '--window-size=1280,800'),
+               '--window-size=1280,800',
+               '--disable-backgrounding-occluded-windows'),
       w3c = FALSE))
 
   }
@@ -44,7 +46,7 @@ upgo_scrape_connect <- function(chrome = "85.0.4183.87", proxy = NULL, ...) {
                              browser = "chrome",
                              chromever = chrome,
                              extraCapabilities = eCaps,
-                             check = FALSE,
+                             check = TRUE,
                              verbose = FALSE,
                              ...),
          envir = .upgo_env)
