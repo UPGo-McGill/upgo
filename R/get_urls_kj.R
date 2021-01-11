@@ -99,58 +99,38 @@ get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
 
   # Scrape in descending order
   handler_upgo("Scraping listing page")
-
   url_list <- vector("list", pages)
+  pb <- progressor(steps = pages + (pages == 100) * 100)
 
-  with_progress({
-
-    pb <- progressor(steps = pages)
-
-    for (i in seq_len(pages)) {
-
-      user_agent <- user_agents[[i %% length(user_agents) + 1]]
-      proxy <- NULL
-      if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
-      pb()
-
-      url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
-                    url_end)
-
-      url_list[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
-      Sys.sleep(timeout)
-
-      }})
+  for (i in seq_len(pages)) {
+    user_agent <- user_agents[[i %% length(user_agents) + 1]]
+    proxy <- NULL
+    if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
+    pb()
+    url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
+                  url_end)
+    url_list[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
+    Sys.sleep(timeout)
+    }
 
   url_list <- paste0(url_start, unique(unlist(url_list)))
 
   # If pages == 100, scrape again in ascending order
   if (pages == 100) {
-
     url_list_2 <- vector("list", pages)
 
-    handler_upgo("Scraping (in reverse order) listing page")
-
-    with_progress({
-
-      pb <- progressor(steps = pages)
-
-      for (i in seq_len(pages)) {
-
-        user_agent <- user_agents[[i %% length(user_agents) + 1]]
-        proxy <- NULL
-        if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
-        pb()
-
-        url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
-                      url_end, "&sort=dateAsc")
-
-        url_list_2[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
-        Sys.sleep(timeout)
-
-      }})
+    for (i in seq_len(pages)) {
+      user_agent <- user_agents[[i %% length(user_agents) + 1]]
+      proxy <- NULL
+      if (!is.null(proxies)) proxy <- proxies[[i %% length(proxies) + 1]]
+      pb()
+      url <- paste0(url_start, city_vec[[1]], "page-", i, "/", city_vec[[2]],
+                    url_end, "&sort=dateAsc")
+      url_list_2[[i]] <- helper_scrape_listing_page_kj(url, user_agent, proxy)
+      Sys.sleep(timeout)
+      }
 
     url_list <- unique(c(url_list, paste0(url_start, unlist(url_list_2))))
-
     }
 
   return(url_list)
