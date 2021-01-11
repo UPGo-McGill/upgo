@@ -38,18 +38,18 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
 
   ## Check for missing text field ----------------------------------------------
 
-  # text_check <-
-  #   tryCatch({
-  #     listing %>%
-  #       rvest::html_node(
-  #         xpath = '//*[@class = "descriptionContainer-3544745383"]') %>%
-  #       rvest::html_node('div') %>%
-  #       rvest::html_text()
-  #     TRUE},
-  #     error = function(e) FALSE)
-  #
-  # # If the text field still isn't present, exit function
-  # if (!text_check) return(helper_error_kj())
+  text_check <-
+    tryCatch({
+      listing %>%
+        rvest::html_node(
+          xpath = '//*[@class = "descriptionContainer-3261352004"]') %>%
+        rvest::html_node('div') %>%
+        rvest::html_text()
+      TRUE},
+      error = function(e) FALSE)
+
+  # If the text field still isn't present, exit function
+  if (!text_check) return(helper_error_kj())
 
 
   ## Find details class --------------------------------------------------------
@@ -140,7 +140,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
     text =
       listing %>%
       rvest::html_node(xpath =
-                         '//*[@class = "descriptionContainer-3544745383"]') %>%
+                         '//*[@class = "descriptionContainer-3261352004"]') %>%
       rvest::html_node('div') %>%
       rvest::html_text(),
     photos = suppressWarnings(list(
