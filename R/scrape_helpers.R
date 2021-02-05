@@ -1075,7 +1075,7 @@ helper_scrape_ab_registration <- function(PID) {
 
   ### Get field ################################################################
 
-  reg <- remDr$findElements("class", "_1y6fhhr")
+  reg <- remDr$findElements("class", "_1xib9m0")
   reg <- reg[[1]]$getElementAttribute("outerHTML")[[1]]
   reg <- stringr::str_extract(reg, paste0("(?<=Licence number</span><br>)",
                                           ".*(?=</span></div>)"))
