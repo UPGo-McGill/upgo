@@ -11,12 +11,14 @@
 #' with Selenium.
 #' @param proxy A character string. The URL of a proxy server to connect
 #' through.
+#' @param port An integer scalar. The port to open the server on.
 #' @param ... Additional arguments passed to RSelenium::rsDriver.
 #' @return The function returns a connection object, which it assigns to `rD` in
 #' the global environment.
 #' @export
 
-upgo_scrape_connect <- function(chrome = "87.0.4280.88", proxy = NULL, ...) {
+upgo_scrape_connect <- function(chrome = "90.0.4430.24", proxy = NULL,
+                                port = 4444L, ...) {
 
   helper_require("RSelenium")
 
@@ -42,7 +44,7 @@ upgo_scrape_connect <- function(chrome = "87.0.4280.88", proxy = NULL, ...) {
   message(crayon::silver(glue::glue("Initializing Selenium server.")))
 
   assign("rD",
-         RSelenium::rsDriver(port = 4444L,
+         RSelenium::rsDriver(port = port,
                              browser = "chrome",
                              chromever = chrome,
                              extraCapabilities = eCaps,
