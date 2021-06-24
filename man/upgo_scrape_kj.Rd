@@ -28,7 +28,8 @@ long-term rentals ("long") or both ("both", the default) be scraped?}
 results from a previous, unsuccessful function call?}
 
 \item{proxies}{Character vector of IPs to use for proxy connections. If
-supplied, this must be at least as long as the number of cores.}
+the length is less than the number of processes set by `future::plan()`,
+proxies will be recycled.}
 
 \item{quiet}{A logical vector. Should the function execute quietly, or should
 it return status updates throughout the function (default)?}

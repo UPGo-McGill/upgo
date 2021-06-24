@@ -2,7 +2,7 @@
 % Please edit documentation in R/download_listings_kj.R
 \name{download_listings_kj}
 \alias{download_listings_kj}
-\title{Helper function to download Craigslist or Kijiji listings}
+\title{Helper function to download Kijiji listings}
 \usage{
 download_listings_kj(url_list, timeout = 1, proxies = NULL, quiet = FALSE)
 }
@@ -15,5 +15,5 @@ download_listings_kj(url_list, timeout = 1, proxies = NULL, quiet = FALSE)
 A list of HTML objects.
 }
 \description{
-\code{download_listings)kj} scrapes listings from a list of URLs.
+\code{download_listings_kj} scrapes listings from a list of URLs.
 }

@@ -13,7 +13,8 @@
 #' @param recovery A logical vector. Should the function attempt to recover
 #' results from a previous, unsuccessful function call?
 #' @param proxies Character vector of IPs to use for proxy connections. If
-#' supplied, this must be at least as long as the number of cores.
+#' the length is less than the number of processes set by `future::plan()`,
+#' proxies will be recycled.
 #' @param quiet A logical vector. Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with one row per listing scraped.

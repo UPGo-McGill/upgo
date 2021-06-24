@@ -1,6 +1,6 @@
-#' Helper function to download Craigslist or Kijiji listings
+#' Helper function to download Kijiji listings
 #'
-#' \code{download_listings)kj} scrapes listings from a list of URLs.
+#' \code{download_listings_kj} scrapes listings from a list of URLs.
 #'
 #' @param urls A character vector of URLs to be scraped.
 #' @param timeout,proxies,quiet TKTK

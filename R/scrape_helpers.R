@@ -525,7 +525,7 @@ helper_scrape_ab <- function(PID) {
           remDr$findElement("xpath", '//*[@data-triggered = "true"]')
           TRUE
         }, error = function(e) {
-          # If the key element is loaded, wait one second then try again
+          # If the key element isn't loaded, wait one second then try again
           Sys.sleep(1)
           FALSE
         }
@@ -550,7 +550,32 @@ helper_scrape_ab <- function(PID) {
 
   ### Try regular listing type #################################################
 
-  # This class is sometimes present at the top of listings
+  # One of these classes is sometimes present at the top of listings
+  element_top <- remDr$findElements("class", "_1iissmv4")
+
+  if (length(element_top) > 0) {
+
+    element_top <-
+      purrr::map_chr(element_top, ~{
+        .x$getElementAttribute("outerHTML")[[1]]
+      })
+
+    element_top_processed <-
+      element_top %>%
+      stringr::str_extract('(?<=">).*(?=</a>)') %>%
+      stringr::str_replace("<span>", "") %>%
+      stringr::str_replace("</span>", "") %>%
+      stringr::str_split(", ") %>%
+      unlist()
+
+    if (length(element_top_processed) > 0) {
+      scrape_result[1,]$raw <- list(element_top)
+      scrape_result[1,]$note <- "top"
+
+      return(scrape_result)
+    }
+  }
+
   element_top <- remDr$findElements("class", "_5twioja")
 
   if (length(element_top) > 0) {

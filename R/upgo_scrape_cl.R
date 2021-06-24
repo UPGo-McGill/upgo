@@ -325,6 +325,8 @@ upgo_scrape_cl <- function(city, old_results = NULL, old_results_add = FALSE,
   ### RBIND AND RETURN RESULTS #################################################
 
   results <- bind_rows(results)
+  results <- dplyr::mutate(
+    results, id = if_else(str_starts(id, "cl-"), id, paste0("cl-", id)))
 
   return(results)
 
