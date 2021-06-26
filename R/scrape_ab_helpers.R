@@ -291,7 +291,7 @@ helper_parse_ab <- function(scrape_result) {
           city = purrr::map_chr(.data$location, ~{
             if (is.null(.x)) NA_character_ else .x[1]}),
           region = purrr::map_chr(.data$location, ~{
-            if (is.null(.x) NA_character else if (.x[2] %in% US_states) {
+            if (is.null(.x) NA_character_ else if (.x[2] %in% US_states) {
               case_when(
                 .x[2] == "AL" ~ "Alabama",  .x[2] == "AK" ~ "Alaska",
                 .x[2] == "AZ" ~ "Arizona", .x[2] == "AR" ~ "Arkansas",
