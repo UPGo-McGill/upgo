@@ -288,9 +288,10 @@ helper_parse_ab <- function(scrape_result) {
               stringr::str_split(", ") %>%
               unlist()
           }),
-          city = purrr::map_chr(.data$location, ~.x[1]),
+          city = purrr::map_chr(.data$location, ~{
+            if (is.null(.x)) NA_character_ else .x[1]}),
           region = purrr::map_chr(.data$location, ~{
-            if (.x[2] %in% US_states) {
+            if (is.null(.x) NA_character else if (.x[2] %in% US_states) {
               case_when(
                 .x[2] == "AL" ~ "Alabama",  .x[2] == "AK" ~ "Alaska",
                 .x[2] == "AZ" ~ "Arizona", .x[2] == "AR" ~ "Arkansas",
@@ -323,7 +324,8 @@ helper_parse_ab <- function(scrape_result) {
             } else NA_character_
           }),
           country = purrr::map_chr(.data$location, ~{
-            if (.x[2] %in% US_states) "United States" else .x[2]
+            if (is.null(.x) NA_character_ else
+              if (.x[2] %in% US_states) "United States" else .x[2]
           }),
           date = Sys.Date()) %>%
         select(.data$property_ID, .data$city:.data$country, .data$raw,
@@ -345,12 +347,15 @@ helper_parse_ab <- function(scrape_result) {
             stringr::str_split(", ") %>%
             unlist()
         })) %>%
-        mutate(city = purrr::map_chr(.data$location, ~.x[1]),
+        mutate(city = purrr::map_chr(.data$location, ~{
+          if (is.null(.x) NA_character_ else .x[1]}),
                region = purrr::map_chr(.data$location, ~{
-                 if (length(.x) == 2) NA_character_ else .x[2]
+                 if (is.null(.x) NA_character_ else
+                   if (length(.x) == 2) NA_character_ else .x[2]
                }),
                country = purrr::map_chr(.data$location, ~{
-                 if (length(.x) == 2) .x[2] else .x[3]
+                 if (is.null(.x) NA_character_ else
+                   if (length(.x) == 2) .x[2] else .x[3]
                }),
                date = Sys.Date()) %>%
         select(.data$property_ID, .data$city:.data$country, .data$raw,
