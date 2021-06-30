@@ -640,13 +640,20 @@ helper_scrape_ab_registration <- function(PID) {
     return(scrape_result)
   }
 
+  ### Click 'show more' ########################################################
+
+  button <- remDr$findElement(using = "class", value = "_88xxct")
+  button <- button$findChildElement(using = "xpath",
+                                    value = '//div/button/span/span')
+  button$clickElement()
+  Sys.sleep(0.1)
+
 
   ### Get field ################################################################
 
-  reg <- remDr$findElements("class", "_1a5fl1v")
-  reg <- reg[[1]]$getElementAttribute("outerHTML")[[1]]
-  reg <- stringr::str_extract(reg, paste0("(?<=Licence number</span><br>)",
-                                          ".*(?=</span></div>)"))
+  reg <- remDr$findElements(using = "class", value = "_15pb00k")
+  reg <- map_chr(reg, ~.x$getElementText()[[1]])
+  reg <- stringr::str_extract(reg, "(?<=Licence number\\n).*")
   scrape_result[1,]$registration <- reg
 
   return(scrape_result)
