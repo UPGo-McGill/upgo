@@ -630,7 +630,8 @@ helper_scrape_ab_registration <- function(PID) {
   ### Navigate to listing and verify it is loaded ##############################
 
   remDr$setImplicitWaitTimeout(0)
-  remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID))
+  remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID,
+                        "?modal=DESCRIPTION"))
 
   # Temporary workaround until proper loading trigger is found
   Sys.sleep(0.5)
@@ -640,20 +641,13 @@ helper_scrape_ab_registration <- function(PID) {
     return(scrape_result)
   }
 
-  ### Click 'show more' ########################################################
-
-  button <- remDr$findElement(using = "class", value = "_88xxct")
-  button <- button$findChildElement(using = "xpath",
-                                    value = '//div/button/span/span')
-  button$clickElement()
-  Sys.sleep(0.1)
-
 
   ### Get field ################################################################
 
   reg <- remDr$findElements(using = "class", value = "_15pb00k")
   reg <- map_chr(reg, ~.x$getElementText()[[1]])
   reg <- stringr::str_extract(reg, "(?<=Licence number\\n).*")
+  reg <- reg[!is.na(reg)]
   scrape_result[1,]$registration <- reg
 
   return(scrape_result)
