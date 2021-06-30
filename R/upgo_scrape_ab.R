@@ -26,24 +26,24 @@ upgo_scrape_ab <- function(property, quiet = FALSE) {
   ### Initialization ###########################################################
 
   start_time <- Sys.time()
+  i <- NULL
 
-  # helper_require("future")
-  # helper_require("doFuture")
   helper_require("parallel")
   helper_require("doParallel")
   helper_require("RSelenium")
 
   # Check for upgo_scrape_connect cluster
-  # TKTK
+  if (!exists("cl", envir = .upgo_env)) {
+    stop("No Selenium servers running. ",
+         "Start servers with `upgo_scrape_connect()`.",
+         call. = FALSE)
+    }
 
   # Initialize cluster/future
   `%dopar%` <- foreach::`%dopar%`
   old_do_par <- doParallel::registerDoParallel(.upgo_env$cl)
-  # old_do_par <- doFuture::registerDoFuture()
-  # old_future <- future::plan(future::cluster, workers = .upgo_env$cl)
 
-  .temp_results <- i <- NULL
-
+  # Initialize results table
   results <-
     tibble(property_ID = character(),
            city = character(),
@@ -56,7 +56,6 @@ upgo_scrape_ab <- function(property, quiet = FALSE) {
   ### Set initial on.exit statement ############################################
 
   on.exit({
-
     if (exists("results_HA")) results <- bind_rows(results, results_HA)
     total_time <- Sys.time() - start_time
 
@@ -70,7 +69,6 @@ upgo_scrape_ab <- function(property, quiet = FALSE) {
       }
 
     return(results)
-
   })
 
 
@@ -129,13 +127,6 @@ upgo_scrape_ab <- function(property, quiet = FALSE) {
       tryCatch(helper_scrape_ab(j), error = function(e) NULL)
     }
 
-    # results_new <- foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
-    #   tryCatch({
-    #     PIDs_to_scrape[[j]] %>%
-    #       helper_scrape_ab() %>%
-    #       helper_parse_ab()}, error = function(e) NULL)
-    #   }
-
     pb(amount = length(PIDs_to_scrape))
     results_new <- purrr::map_dfr(results_new, helper_parse_ab)
     results <- bind_rows(results, results_new)
@@ -153,12 +144,10 @@ upgo_scrape_ab <- function(property, quiet = FALSE) {
   if (!quiet) {
     message(crayon::bold(crayon::cyan(glue(
       "Scraping complete. {nrow(results)} listings scraped in ",
-      "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."
-    ))))
-  }
+      "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."))))
+    }
 
   on.exit()
-
   return(results)
 
 }

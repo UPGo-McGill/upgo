@@ -607,3 +607,48 @@ helper_parse_ab <- function(scrape_result) {
   }
 }
 
+
+#' Helper function to scrape registration information from an Airbnb listing
+#'
+#' \code{helper_scrape_ab_registration} scrapes the registration number from a
+#' single Airbnb listing and forwards to the calling function for further
+#' processing.
+#'
+#' @param PID An Airbnb property ID to be scraped.
+
+helper_scrape_ab_registration <- function(PID) {
+
+  ### Initialize objects #######################################################
+
+  scrape_result <-
+    dplyr::tibble(property_ID = paste0("ab-", PID),
+                  date = Sys.Date(),
+                  registration = "NO LISTING"
+    )
+
+
+  ### Navigate to listing and verify it is loaded ##############################
+
+  remDr$setImplicitWaitTimeout(0)
+  remDr$navigate(paste0("https://www.airbnb.ca/rooms/", PID))
+
+  # Temporary workaround until proper loading trigger is found
+  Sys.sleep(0.5)
+
+  # Exit early if listing is missing
+  if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
+    return(scrape_result)
+  }
+
+
+  ### Get field ################################################################
+
+  reg <- remDr$findElements("class", "_1a5fl1v")
+  reg <- reg[[1]]$getElementAttribute("outerHTML")[[1]]
+  reg <- stringr::str_extract(reg, paste0("(?<=Licence number</span><br>)",
+                                          ".*(?=</span></div>)"))
+  scrape_result[1,]$registration <- reg
+
+  return(scrape_result)
+
+}

@@ -23,38 +23,39 @@
 #' @export
 
 
-upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
-                                        quiet = FALSE) {
-
-  ### Check for necessary packages #############################################
-
-  helper_require("doFuture")
-  helper_require("future")
-  helper_require("parallel")
-  helper_require("RSelenium")
-
+upgo_scrape_ab_registration <- function(property, quiet = FALSE) {
 
   ### Initialization ###########################################################
 
-  `%dopar%` <- foreach::`%dopar%`
-
   start_time <- Sys.time()
+  i <- NULL
 
-  .temp_results <- i <- NULL
+  helper_require("parallel")
+  helper_require("doParallel")
+  helper_require("RSelenium")
 
+  # Check for upgo_scrape_connect cluster
+  if (!exists("cl", envir = .upgo_env)) {
+    stop("No Selenium servers running. ",
+         "Start servers with `upgo_scrape_connect()`.",
+         call. = FALSE)
+  }
+
+  # Initialize cluster/future
+  `%dopar%` <- foreach::`%dopar%`
+  old_do_par <- doParallel::registerDoParallel(.upgo_env$cl)
+
+  # Initialize results table
   results <-
     tibble(property_ID = character(),
            date = Sys.Date(),
-           registration = character()
-           )
+           registration = character())
 
 
   ### Set initial on.exit statement ############################################
 
   on.exit({
-
     if (exists(results_HA)) results <- bind_rows(results, results_HA)
-
     total_time <- Sys.time() - start_time
 
     if (!quiet) {
@@ -68,64 +69,7 @@ upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
     }
 
     return(results)
-
   })
-
-
-  ### Start clusters and web drivers ###########################################
-
-  # Need "sequential" here as workaround to R 4 / RStudio 1.3 bug
-  cl <- parallel::makeCluster(cores, setup_strategy = "sequential")
-  future::plan(future::cluster, workers = cl, persistent = TRUE)
-  doFuture::registerDoFuture()
-
-
-  ## Start up with no proxies --------------------------------------------------
-
-  if (missing(proxies)) {
-    parallel::clusterEvalQ(cl, {
-      eCaps <- list(chromeOptions = list(
-        args = c('--headless', '--disable-gpu', '--window-size=1280,800'),
-        w3c = FALSE
-      ))
-
-      remDr <-
-        RSelenium::remoteDriver(browserName = "chrome",
-                                extraCapabilities = eCaps)
-
-      remDr$open()
-    })
-
-
-    ## Start up with proxies -----------------------------------------------------
-
-  } else {
-
-    proxy_reps <- ceiling(cores / length(proxies))
-    proxies <- rep(proxies, proxy_reps)[seq_len(cores)]
-    proxies <- paste0("--proxy-server=", proxies)
-
-    if (!quiet) {
-      message(silver(glue("Scraping with {cores} proxies.")))
-    }
-
-    parallel::clusterApply(cl, proxies, function(x) {proxy <<- x})
-
-    parallel::clusterEvalQ(cl, {
-      eCaps <- list(chromeOptions = list(
-        args = c('--headless', '--disable-gpu', '--window-size=1280,800',
-                 proxy),
-        w3c = FALSE
-      ))
-
-      remDr <-
-        RSelenium::remoteDriver(browserName = "chrome",
-                                extraCapabilities = eCaps)
-
-      remDr$open()
-    })
-
-  }
 
 
   ### Extract HA listings ######################################################
@@ -134,8 +78,7 @@ upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
     property %>%
     filter(str_starts(.data$property_ID, "ha-")) %>%
     select(.data$property_ID) %>%
-    mutate(registration = "HOMEAWAY",
-           date = Sys.Date())
+    mutate(registration = "HOMEAWAY", date = Sys.Date())
 
   property <-
     property %>%
@@ -151,83 +94,45 @@ upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
 
   ### Main loop ################################################################
 
-  # Get list of valid Airbnb PIDs to scrape
   PIDs <-
     property %>%
     filter(!.data$property_ID %in% results$property_ID) %>%
     pull(.data$property_ID) %>%
-    substr(4, 15)
-
-  # Set up progress bar
-  if (!quiet) {
-    handler_upgo("Scraping listing")
-  }
+    str_remove("ab-")
 
   # Get number of iterations
   chunk_size <- 100
   scrape_rounds <- ceiling(length(PIDs) / chunk_size)
 
+  # Get browsers open
+  parallel::clusterEvalQ(.upgo_env$cl, {
+    remDr <- rD[["client"]]
+    remDr$open()
+    remDr$setImplicitWaitTimeout(0)
+  })
 
-  ## Loop with progress bar ----------------------------------------------------
-
-  if (!quiet) {
-
-    with_progress({
-
-      .upgo_env$pb <- progressor(along = PIDs)
-      .upgo_env$pb(0)
-
-      for (i in seq_len(scrape_rounds)) {
-
-        PIDs_to_scrape <-
-          PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
-
-        results_new <-
-          foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
-
-            .upgo_env$pb()
-
-            tryCatch({
-              PIDs_to_scrape[[j]] %>%
-                helper_scrape_ab_registration()
-            }, error = function(e) NULL)
-          }
-
-        results <- bind_rows(results, results_new)
-      }
-    })
+  # Set up progress bar
+  handler_upgo("Scraping listing")
+  prog_bar <- as.logical(as.numeric(!quiet) * progressr::handlers(global = NA))
+  pb <- progressr::progressor(along = PIDs, enable = prog_bar)
 
 
-    ## Loop without progress bar -------------------------------------------------
+  ## Main loop -----------------------------------------------------------------
 
-  } else {
+  for (i in seq_len(scrape_rounds)) {
+    PIDs_to_scrape <- PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
 
-    for (i in seq_len(scrape_rounds)) {
-
-      PIDs_to_scrape <-
-        PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
-
-      results_new <-
-        foreach(j = seq_along(PIDs_to_scrape)) %dopar% {
-
-          tryCatch({
-            PIDs_to_scrape[[j]] %>%
-              helper_scrape_ab_registration()
-          }, error = function(e) NULL)
-        }
-
-      results <- bind_rows(results, results_new)
+    results_new <- foreach(j = PIDs_to_scrape) %dopar% {
+      tryCatch(helper_scrape_ab_registration(j), error = function(e) NULL)
     }
+
+    pb(amount = length(PIDs_to_scrape))
+    results <- bind_rows(results, results_new)
+
   }
 
 
-
   ### Clean up and prepare output ##############################################
-
-  # Shut down browsers
-  parallel::clusterEvalQ(cl, {
-    remDr$close()
-  })
 
   # Rbind HA listings into scraped output
   results <- bind_rows(results, results_HA)
@@ -237,15 +142,10 @@ upgo_scrape_ab_registration <- function(property, proxies = NULL, cores = 1L,
   if (!quiet) {
     message(crayon::bold(crayon::cyan(glue(
       "Scraping complete. {nrow(results)} listings scraped in ",
-      "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."
-    ))))
+      "{substr(total_time, 1, 5)} {attr(total_time, 'units')}."))))
   }
 
   on.exit()
-
-  # Satisfy R CMD check
-  proxy <- NULL
-
   return(results)
 
 }
