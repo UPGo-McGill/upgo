@@ -7,10 +7,7 @@
 #'
 #' @param property An input table with a field named `property_ID` which will be
 #' used to generate URLs for scraping.
-#' @param proxies Character vector of IPs to use for proxy connections. If
-#' supplied, this must be at least as long as the number of cores.
-#' @param cores A positive integer scalar. How many processing cores should be
-#' used to scrape?
+#' @param timeout TKTK
 #' @param quiet A logical scalar Should the function execute quietly, or should
 #' it return status updates throughout the function (default)?
 #' @return A table with property_ID, registration and date fields.
@@ -23,7 +20,7 @@
 #' @export
 
 
-upgo_scrape_ab_registration <- function(property, quiet = FALSE) {
+upgo_scrape_ab_registration <- function(property, timeout = 1, quiet = FALSE) {
 
   ### Initialization ###########################################################
 

@@ -4,20 +4,16 @@
 \alias{upgo_scrape_ab_registration}
 \title{Scrape registration numbers from Airbnb listings}
 \usage{
-upgo_scrape_ab_registration(property, quiet = FALSE)
+upgo_scrape_ab_registration(property, timeout = 1, quiet = FALSE)
 }
 \arguments{
 \item{property}{An input table with a field named `property_ID` which will be
 used to generate URLs for scraping.}
 
+\item{timeout}{TKTK}
+
 \item{quiet}{A logical scalar Should the function execute quietly, or should
 it return status updates throughout the function (default)?}
-
-\item{proxies}{Character vector of IPs to use for proxy connections. If
-supplied, this must be at least as long as the number of cores.}
-
-\item{cores}{A positive integer scalar. How many processing cores should be
-used to scrape?}
 }
 \value{
 A table with property_ID, registration and date fields.

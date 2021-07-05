@@ -4,10 +4,12 @@
 \alias{helper_scrape_ab_registration}
 \title{Helper function to scrape registration information from an Airbnb listing}
 \usage{
-helper_scrape_ab_registration(PID)
+helper_scrape_ab_registration(PID, timeout)
 }
 \arguments{
 \item{PID}{An Airbnb property ID to be scraped.}
+
+\item{timeout}{TKTK}
 }
 \description{
 \code{helper_scrape_ab_registration} scrapes the registration number from a

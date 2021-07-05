@@ -615,16 +615,16 @@ helper_parse_ab <- function(scrape_result) {
 #' processing.
 #'
 #' @param PID An Airbnb property ID to be scraped.
+#' @param timeout TKTK
 
-helper_scrape_ab_registration <- function(PID) {
+helper_scrape_ab_registration <- function(PID, timeout) {
 
   ### Initialize objects #######################################################
 
   scrape_result <-
     dplyr::tibble(property_ID = paste0("ab-", PID),
                   date = Sys.Date(),
-                  registration = NA_character_
-    )
+                  registration = NA_character_)
 
 
   ### Navigate to listing and verify it is loaded ##############################
@@ -634,7 +634,7 @@ helper_scrape_ab_registration <- function(PID) {
                         "?modal=DESCRIPTION"))
 
   # Temporary workaround until proper loading trigger is found
-  Sys.sleep(1)
+  Sys.sleep(timeout)
 
   # Exit early if listing is missing
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
