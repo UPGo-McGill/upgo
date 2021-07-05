@@ -122,8 +122,8 @@ upgo_scrape_ab_registration <- function(property, timeout = 1, quiet = FALSE) {
     results_new <- foreach(j = PIDs_to_scrape) %dopar% {
       out <- tryCatch(helper_scrape_ab_registration(j, timeout = timeout),
                       error = function(e) NULL)
-      if (!is.null(out) && out[1,]$registration == "DENIED")
-        stop("ACCESS DENIED", call. = FALSE)
+      if (!is.null(out) && !is.na(out[1,]$registration) &&
+          out[1,]$registration == "DENIED") stop("ACCESS DENIED", call. = FALSE)
       out
     }
 
