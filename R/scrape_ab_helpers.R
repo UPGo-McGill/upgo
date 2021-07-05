@@ -642,6 +642,19 @@ helper_scrape_ab_registration <- function(PID, timeout) {
     return(scrape_result)
   }
 
+  # Check for "Access Denied"
+  denied <- tryCatch({
+    denied <- suppressMessages(remDr$findElement(
+      using = "xpath", value = '/html/body/h1'))
+    denied <- denied$getElementText()[[1]]
+    }, error = function(e) "OK")
+
+  if (denied == "Access Denied") {
+    scrape_result[1,]$registration <- "DENIED"
+    return(scrape_result)
+  }
+
+
 
   ### Get field ################################################################
 

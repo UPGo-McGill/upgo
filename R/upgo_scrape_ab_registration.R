@@ -120,8 +120,11 @@ upgo_scrape_ab_registration <- function(property, timeout = 1, quiet = FALSE) {
     PIDs_to_scrape <- PIDs[(((i - 1) * chunk_size) + 1):(i * chunk_size)]
 
     results_new <- foreach(j = PIDs_to_scrape) %dopar% {
-      tryCatch(helper_scrape_ab_registration(j, timeout = timeout),
-               error = function(e) NULL)
+      out <- tryCatch(helper_scrape_ab_registration(j, timeout = timeout),
+                      error = function(e) NULL)
+      if (!is.null(out) && out[1,]$registration == "DENIED")
+        stop("ACCESS DENIED", call. = FALSE)
+      out
     }
 
     pb(amount = length(PIDs_to_scrape))
