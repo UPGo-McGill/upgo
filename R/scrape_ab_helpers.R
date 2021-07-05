@@ -634,7 +634,7 @@ helper_scrape_ab_registration <- function(PID) {
                         "?modal=DESCRIPTION"))
 
   # Temporary workaround until proper loading trigger is found
-  Sys.sleep(0.5)
+  Sys.sleep(1)
 
   # Exit early if listing is missing
   if (remDr$getCurrentUrl()[[1]] == "https://www.airbnb.ca/s/homes") {
@@ -649,6 +649,7 @@ helper_scrape_ab_registration <- function(PID) {
   reg <- map_chr(reg, ~.x$getElementText()[[1]])
   reg <- stringr::str_extract(reg, "(?<=Licence number\\n).*")
   reg <- reg[!is.na(reg)]
+  if (length(reg) == 0) reg <- NA_character_
   scrape_result[1,]$registration <- reg
 
   return(scrape_result)
