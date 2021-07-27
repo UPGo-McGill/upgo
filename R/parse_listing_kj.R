@@ -147,7 +147,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       listing %>%
         rvest::html_nodes(
           xpath =
-            '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
+            '//*[@class = "heroImageBackground-811153256 backgroundImage"]'
         ) %>%
         stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
