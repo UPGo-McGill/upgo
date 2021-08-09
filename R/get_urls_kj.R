@@ -75,7 +75,8 @@ get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
     listings_to_scrape <-
       listings_to_scrape %>%
       xml2::read_html() %>%
-      rvest::html_node(xpath = '//*[@class="showing"]') %>%
+      rvest::html_node(
+        xpath = '//*[@class="resultsShowingCount-2351335546"]') %>%
       rvest::html_text()
 
   } else stop("The server returned a ", listings_to_scrape$status_code,

@@ -144,11 +144,12 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       rvest::html_node('div') %>%
       rvest::html_text(),
     photos = suppressWarnings(list(
-      listing %>% rvest::html_nodes(
-        xpath = '//*[starts-with(@class, "container-4202182046 heroImageBackgroundContainer-811153256 backgroundImage")]/picture'
+      listing %>%
+        rvest::html_nodes(
+          xpath =
+            '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
         ) %>%
-        stringr::str_extract('(?<=srcset..).*(?=..type)')
-    ))
+        stringr::str_extract('(?<=image:url..).*(?=..;back)')))
   ) %>%
     mutate(bedrooms = case_when(
       bedrooms == "1 chambre et salon"              ~ "1 + Den",
