@@ -14,6 +14,26 @@
 
 parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
 
+  ## Declare classes for parsing -----------------------------------------------
+
+  # To check if the page is expired
+  class_page_expired <- '//*[@id = "PageExpiredVIP"]'
+
+  # To check if the text field is missing
+  class_missing_text <- '//*[@class = "descriptionContainer-3261352004"]'
+
+  # To get main details box
+  class_details <- '//*[@id="mainPageContent"]'
+
+  # To get listing ID
+  class_id <- '//*[@class = "adId-4111206830"]'
+
+  # To get photos
+  class_photos <- paste0('//*[starts-with(@class, "container-4202182046 ',
+                         'heroImageBackgroundContainer-811153256 ',
+                         'backgroundImage")]/picture')
+
+
   ## Initialize variables and environments -------------------------------------
 
   helper_require("rvest")
@@ -30,7 +50,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
 
   expired_check <-
     listing %>%
-    rvest::html_node(xpath = '//*[@id = "PageExpiredVIP"]') %>%
+    rvest::html_node(xpath = class_page_expired) %>%
     rvest::html_text()
 
   if (!is.na(expired_check)) return(helper_error_kj())
@@ -42,7 +62,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
     tryCatch({
       listing %>%
         rvest::html_node(
-          xpath = '//*[@class = "descriptionContainer-3261352004"]') %>%
+          xpath = class_missing_text) %>%
         rvest::html_node('div') %>%
         rvest::html_text()
       TRUE},
@@ -56,7 +76,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
 
   x_details <-
     listing %>%
-    rvest::html_node(xpath = '//*[@id="mainPageContent"]') %>%
+    rvest::html_node(xpath = class_details) %>%
     xml2::xml_child(2) %>%
     rvest::html_text()
 
@@ -94,7 +114,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
   tibble(
     id =
       listing %>%
-      rvest::html_node(xpath = '//*[@class = "adId-4111206830"]') %>%
+      rvest::html_node(xpath = class_id) %>%
       rvest::html_text() %>%
       paste0("kj-", .),
     url =
@@ -145,20 +165,15 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       rvest::html_text(),
     photos = suppressWarnings(list(
       listing %>%
-        rvest::html_nodes(
-          xpath =
-            '//*[@class = "heroImageBackground-4116888288 backgroundImage"]'
-        ) %>%
-        stringr::str_extract('(?<=image:url..).*(?=..;back)')))
-  ) %>%
+        rvest::html_nodes(xpath = class_photos) %>%
+        stringr::str_extract('(?<=srcset..).*(?=..type)')))) %>%
     mutate(bedrooms = case_when(
       bedrooms == "1 chambre et salon"              ~ "1 + Den",
       bedrooms == "2 chambres et coin d\u00e9tente" ~ "2 + Den",
       bedrooms == "6+"                              ~ "6+",
       bedrooms == "6 chambres ou plus"              ~ "5+",
       bedrooms == "Studio"                          ~ "Bachelor/Studio",
-      TRUE ~ bedrooms
-    )) %>%
+      TRUE ~ bedrooms)) %>%
     mutate(furnished = case_when(.data$furnished %in% c("Oui", "Yes") ~ TRUE,
                                  .data$furnished %in% c("Non", "No") ~ FALSE,
                                  is.na(.data$furnished) ~ NA))

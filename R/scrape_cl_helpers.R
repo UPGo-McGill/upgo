@@ -21,6 +21,10 @@ helper_urls_cl <- function(city_name, proxies = NULL) {
     httr::set_config(httr::use_proxy(proxies[[rand]]))
   }
 
+  ## Establish user agent ------------------------------------------------------
+
+  user_agent <- user_agents[[ceiling(runif(1, 1, length(user_agents)))]]
+
 
   ## Construct listing page URL ------------------------------------------------
 

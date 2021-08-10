@@ -16,6 +16,15 @@
 get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
                         proxies = NULL, quiet = FALSE) {
 
+  ## Declare classes for scraping ----------------------------------------------
+
+  # For finding number of pages of results; symptomatic error is:
+  # Error in if (nchar(listings_to_scrape) == 0) { :
+  #  missing value where TRUE/FALSE needed
+  class_n_results <- '//*[@class="resultsShowingCount-2351335546"]'
+
+
+
   ## Initialize variables and environments -------------------------------------
 
   helper_require("rvest")
@@ -76,7 +85,7 @@ get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
       listings_to_scrape %>%
       xml2::read_html() %>%
       rvest::html_node(
-        xpath = '//*[@class="resultsShowingCount-2351335546"]') %>%
+        xpath = class_n_results) %>%
       rvest::html_text()
 
   } else stop("The server returned a ", listings_to_scrape$status_code,
