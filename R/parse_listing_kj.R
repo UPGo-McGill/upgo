@@ -28,6 +28,9 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
   # To get listing ID
   class_id <- '//*[@class = "adId-4111206830"]'
 
+  # To get created date
+  class_created <- '//*[@class = "datePosted-383942873"]/span'
+
   # To get photos
   class_photos <- paste0('//*[starts-with(@class, "container-4202182046 ',
                          'heroImageBackgroundContainer-811153256 ',
@@ -130,9 +133,10 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       "long"),
     created =
       listing %>%
-      rvest::html_node(xpath = '//*/time/@datetime') %>%
-      rvest::html_text() %>%
-      as.Date(),
+      rvest::html_element(xpath = class_created) %>%
+      rvest::html_attr("title") %>%
+      lubridate::parse_date_time("%B %d, %y %I:%M %p") %>%
+      lubridate::as_date(),
     scraped = Sys.Date(),
     price =
       listing %>%
