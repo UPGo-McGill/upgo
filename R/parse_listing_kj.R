@@ -131,12 +131,16 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       stringr::str_detect(url, "v-location-court-terme|v-short-term-rental"),
       "short",
       "long"),
-    created =
+    created = coalesce(
       listing %>%
-      rvest::html_element(xpath = class_created) %>%
-      rvest::html_attr("title") %>%
-      lubridate::parse_date_time("%B %d, %y %I:%M %p") %>%
-      lubridate::as_date(),
+        rvest::html_node(xpath = '//*/time/@datetime') %>%
+        rvest::html_text() %>%
+        as.Date(),
+      listing %>%
+        rvest::html_element(xpath = class_created) %>%
+        rvest::html_attr("title") %>%
+        lubridate::parse_date_time("%B %d, %y %I:%M %p") %>%
+        lubridate::as_date()),
     scraped = Sys.Date(),
     price =
       listing %>%
