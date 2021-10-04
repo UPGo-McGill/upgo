@@ -19,8 +19,8 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
   # To check if the page is expired
   class_page_expired <- '//*[@id = "PageExpiredVIP"]'
 
-  # To check if the text field is missing
-  class_missing_text <- '//*[@class = "descriptionContainer-231909819"]'
+  # To get the text field, or check if the text field is missing
+  class_text <- '//*[@class = "descriptionContainer-231909819"]'
 
   # To get main details box
   class_details <- '//*[@id="mainPageContent"]'
@@ -65,7 +65,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
     tryCatch({
       listing %>%
         rvest::html_node(
-          xpath = class_missing_text) %>%
+          xpath = class_text) %>%
         rvest::html_node('div') %>%
         rvest::html_text()
       TRUE},
@@ -163,8 +163,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
       x_details,
     text =
       listing %>%
-      rvest::html_node(xpath =
-                         '//*[@class = "descriptionContainer-3261352004"]') %>%
+      rvest::html_node(xpath = class_text) %>%
       rvest::html_node('div') %>%
       rvest::html_text(),
     photos = suppressWarnings(list(
