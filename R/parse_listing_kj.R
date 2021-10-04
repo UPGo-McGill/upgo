@@ -20,7 +20,7 @@ parse_listing_kj <- function(x, city_name, proxies = NULL, quiet = FALSE) {
   class_page_expired <- '//*[@id = "PageExpiredVIP"]'
 
   # To check if the text field is missing
-  class_missing_text <- '//*[@class = "descriptionContainer-3261352004"]'
+  class_missing_text <- '//*[@class = "descriptionContainer-231909819"]'
 
   # To get main details box
   class_details <- '//*[@id="mainPageContent"]'
