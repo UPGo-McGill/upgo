@@ -3,8 +3,9 @@
 #' \code{get_urls_kj} scrapes Kijiji listing URLs for a city.
 #'
 #' @param city_name A character string: the city to be scraped.
-#' @param short_long A character string, either "short" or "long" or "both", to
+#' @param short_long A character string, either "short" or "long", to
 #' determine whether STR or LTR listing URLs should be scraped.
+#' @param timeout TKTK
 #' @param proxies Character vector of IPs to use for proxy connections. If
 #' the length is less than the number of processes set by `future::plan()`,
 #' proxies will be recycled.
@@ -13,15 +14,15 @@
 #' @return A list of URLs.
 #' @export
 
-get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
-                        proxies = NULL, quiet = FALSE) {
+get_urls_kj <- function(city_name, short_long, timeout = 1, proxies = NULL,
+                        quiet = FALSE) {
 
   ## Declare classes for scraping ----------------------------------------------
 
   # For finding number of pages of results; symptomatic error is:
   # Error in if (nchar(listings_to_scrape) == 0) { :
   #  missing value where TRUE/FALSE needed
-  class_n_results <- '//*[@class="resultsShowingCount-2351335546"]'
+  class_n_results <- '//*[@class="resultsShowingCount-1707762110"]'
 
 
 
@@ -108,7 +109,7 @@ get_urls_kj <- function(city_name, short_long = "both", timeout = 1,
   ## Scrape pages --------------------------------------------------------------
 
   # Scrape in descending order
-  handler_upgo("Scraping listing page")
+  handler_upgo(paste("Scraping", city_name, short_long, "listing page"))
   url_list <- vector("list", pages)
   pb <- progressor(steps = pages + (pages == 100) * 100)
 
